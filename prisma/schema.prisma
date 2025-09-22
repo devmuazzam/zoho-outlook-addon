@@ -1,0 +1,250 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Zoho authentication tokens
+  zohoTokens ZohoAuthToken[]
+
+  // Relations
+  contacts Contact[]
+  leads    Lead[]
+
+  @@map("users")
+}
+
+// Zoho authentication tokens storage
+model ZohoAuthToken {
+  id           String    @id @default(cuid())
+  userId       String
+  accessToken  String    @db.Text
+  refreshToken String?   @db.Text
+  tokenType    String    @default("Bearer")
+  expiresAt    DateTime
+  scopes       String[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@map("zoho_auth_tokens")
+}
+
+// Contacts from Zoho CRM
+model Contact {
+  id          String    @id @default(cuid())
+  zohoId      String?   @unique // Zoho CRM contact ID
+  firstName   String?
+  lastName    String?
+  email       String?
+  phone       String?
+  mobile      String?
+  company     String?
+  title       String?
+  department  String?
+  leadSource  String?
+  description String?   @db.Text
+  
+  // Address information
+  mailingStreet  String?
+  mailingCity    String?
+  mailingState   String?
+  mailingZip     String?
+  mailingCountry String?
+  
+  // System fields
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  syncedAt    DateTime @default(now()) // Last sync with Zoho
+  
+  // Relations
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+  
+  // Contact activities
+  activities ContactActivity[]
+  
+  @@map("contacts")
+}
+
+// Leads from Zoho CRM
+model Lead {
+  id          String     @id @default(cuid())
+  zohoId      String?    @unique // Zoho CRM lead ID
+  firstName   String?
+  lastName    String?
+  email       String?
+  phone       String?
+  mobile      String?
+  company     String?
+  title       String?
+  industry    String?
+  leadSource  String?
+  leadStatus  LeadStatus @default(NEW)
+  rating      String?
+  description String?    @db.Text
+  
+  // Address information
+  street  String?
+  city    String?
+  state   String?
+  zip     String?
+  country String?
+  
+  // System fields
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  syncedAt    DateTime @default(now()) // Last sync with Zoho
+  
+  // Relations
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+  
+  // Lead activities
+  activities LeadActivity[]
+  
+  @@map("leads")
+}
+
+// Contact activities/interactions
+model ContactActivity {
+  id          String            @id @default(cuid())
+  contactId   String
+  type        ActivityType
+  subject     String?
+  description String?           @db.Text
+  status      ActivityStatus    @default(PLANNED)
+  priority    ActivityPriority  @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@map("contact_activities")
+}
+
+// Lead activities/interactions
+model LeadActivity {
+  id          String            @id @default(cuid())
+  leadId      String
+  type        ActivityType
+  subject     String?
+  description String?           @db.Text
+  status      ActivityStatus    @default(PLANNED)
+  priority    ActivityPriority  @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_activities")
+}
+
+// Webhook logs for debugging
+model WebhookLog {
+  id        String      @id @default(cuid())
+  source    String      // "zoho", "other"
+  event     String      // "contact.created", "lead.updated", etc.
+  module    String?     // "Contacts", "Leads", etc.
+  operation String?     // "insert", "update", "delete"
+  payload   Json
+  status    WebhookStatus @default(RECEIVED)
+  error     String?     @db.Text
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("webhook_logs")
+}
+
+// Application settings
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  category  String   @default("general")
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  USER
+  VIEWER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+  NOT_CONTACTED
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  TASK
+  NOTE
+  FOLLOW_UP
+}
+
+enum ActivityStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum ActivityPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+  IGNORED
+}

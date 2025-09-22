@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     // This is a frontend API route that could proxy to backend
-    const backendResponse = await fetch('http://localhost:3002/api/hello');
+    const backendResponse = await fetch('http://localhost:3001/api/hello');
     const data = await backendResponse.json();
     
     return NextResponse.json(data);
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Proxy to backend
-    const backendResponse = await fetch('http://localhost:3002/api/data', {
+    const backendResponse = await fetch('http://localhost:3001/api/data', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

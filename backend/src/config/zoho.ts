@@ -82,7 +82,7 @@ export interface ZohoWebhookData {
 export const ZOHO_CONFIG: ZohoOAuthConfig = {
   CLIENT_ID: process.env.ZOHO_CLIENT_ID || '',
   CLIENT_SECRET: process.env.ZOHO_CLIENT_SECRET || '',
-  REDIRECT_URI: process.env.ZOHO_REDIRECT_URI || 'http://localhost:3002/auth/callback',
+  REDIRECT_URI: process.env.ZOHO_REDIRECT_URI || 'http://localhost:3001/api/auth/callback/zoho',
   SCOPES: [
     'ZohoCRM.modules.contacts.READ',
     'ZohoCRM.modules.contacts.WRITE',

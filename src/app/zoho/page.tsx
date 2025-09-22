@@ -164,13 +164,20 @@ export default function ZohoCRMPage() {
 
   const loadUserData = async () => {
     try {
-      // Load current user
+      console.log('🔄 Loading user data...');
       const userResponse = await zohoAPIClient.getCurrentUser();
+      console.log('📡 User response:', userResponse);
+      
       if (userResponse.success && userResponse.data?.users?.[0]) {
         setCurrentUser(userResponse.data.users[0]);
+        console.log('✅ User data loaded:', userResponse.data.users[0]);
+      } else {
+        console.warn('⚠️ No user data in response:', userResponse);
+        setError('No user information found');
       }
     } catch (error: any) {
-      console.error('Failed to load user data:', error);
+      console.error('❌ Failed to load user data:', error);
+      setError('Failed to load user information: ' + error.message);
     }
   };
 
@@ -238,6 +245,9 @@ export default function ZohoCRMPage() {
     
     // Load data when tab is selected
     switch (newValue) {
+      case 0:
+        if (!currentUser) loadUserData();
+        break;
       case 1:
         if (contacts.length === 0) loadContacts();
         break;
@@ -356,7 +366,13 @@ export default function ZohoCRMPage() {
           </Box>
 
           <TabPanel value={tabValue} index={0}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Current User Information</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Current User Information</Typography>
+              <Button variant="outlined" onClick={loadUserData} disabled={loading}>
+                {loading ? <CircularProgress size={20} /> : 'Refresh User Info'}
+              </Button>
+            </Box>
+            
             {currentUser ? (
               <Box>
                 <Typography><strong>Name:</strong> {currentUser.full_name}</Typography>
@@ -370,7 +386,9 @@ export default function ZohoCRMPage() {
                 )}
               </Box>
             ) : (
-              <Typography color="text.secondary">Loading user information...</Typography>
+              <Typography color="text.secondary">
+                {loading ? 'Loading user information...' : 'Click "Refresh User Info" to load user information'}
+              </Typography>
             )}
           </TabPanel>
 

@@ -218,7 +218,7 @@ export class ApiClient {
 }
 
 // API configuration and utilities
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Create API client instances
 // Main API client for frontend

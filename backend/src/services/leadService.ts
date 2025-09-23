@@ -1,5 +1,7 @@
 import { PrismaClient, Lead, Prisma, LeadStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
+import { zohoCRMService } from './zohoCRM';
+import { ZohoLead, ZohoAPIResponse } from '../config/zoho';
 
 export class LeadService {
   private db: PrismaClient;
@@ -259,6 +261,103 @@ export class LeadService {
     }, {} as Record<string, number>);
 
     return { total, byStatus };
+  }
+
+  // ===== ZOHO CRM API METHODS =====
+
+  /**
+   * Get leads from Zoho CRM with pagination
+   */
+  async getLeadsFromZoho(page: number = 1, perPage: number = 10): Promise<ZohoAPIResponse<{ data: ZohoLead[] }>> {
+    return zohoCRMService.makeAPICall<{ data: ZohoLead[] }>(`/Leads?page=${page}&per_page=${perPage}`);
+  }
+
+  /**
+   * Get a specific lead from Zoho CRM by ID
+   */
+  async getLeadFromZoho(leadId: string): Promise<ZohoAPIResponse<{ data: ZohoLead[] }>> {
+    return zohoCRMService.makeAPICall<{ data: ZohoLead[] }>(`/Leads/${leadId}`);
+  }
+
+  /**
+   * Create a new lead in Zoho CRM
+   */
+  async createLeadInZoho(leadData: Partial<ZohoLead>): Promise<ZohoAPIResponse<any>> {
+    const payload = {
+      data: [{
+        First_Name: leadData.First_Name,
+        Last_Name: leadData.Last_Name,
+        Email: leadData.Email,
+        Phone: leadData.Phone,
+        Company: leadData.Company,
+        Lead_Status: leadData.Lead_Status || 'Not Contacted'
+      }]
+    };
+
+    const result = await zohoCRMService.makeAPICall('/Leads', 'POST', payload);
+    
+    // If successful, sync the created lead to local database
+    if (result.success && result.data) {
+      try {
+        const responseData = result.data as any;
+        if (responseData?.data?.[0]?.details) {
+          await this.syncFromZoho(responseData.data[0].details);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Failed to sync created lead to local DB:', syncError);
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Update an existing lead in Zoho CRM
+   */
+  async updateLeadInZoho(leadId: string, leadData: Partial<ZohoLead>): Promise<ZohoAPIResponse<any>> {
+    const payload = {
+      data: [{
+        id: leadId,
+        ...leadData
+      }]
+    };
+
+    const result = await zohoCRMService.makeAPICall(`/Leads/${leadId}`, 'PUT', payload);
+    
+    // If successful, sync the updated lead to local database
+    if (result.success) {
+      try {
+        const updatedLead = await this.getLeadFromZoho(leadId);
+        if (updatedLead.success && updatedLead.data?.data?.[0]) {
+          await this.syncFromZoho(updatedLead.data.data[0]);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Failed to sync updated lead to local DB:', syncError);
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Delete a lead from Zoho CRM
+   */
+  async deleteLeadFromZoho(leadId: string): Promise<ZohoAPIResponse<any>> {
+    const result = await zohoCRMService.makeAPICall(`/Leads/${leadId}`, 'DELETE');
+    
+    // If successful, mark as inactive in local database
+    if (result.success) {
+      try {
+        const localLead = await this.getLeadByZohoId(leadId);
+        if (localLead) {
+          await this.deleteLead(localLead.id);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Failed to mark lead as inactive in local DB:', syncError);
+      }
+    }
+    
+    return result;
   }
 }
 

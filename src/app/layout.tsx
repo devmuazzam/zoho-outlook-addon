@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,6 +18,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <Script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js" />
+      </head>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider>
           {children}

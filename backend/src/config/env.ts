@@ -18,7 +18,16 @@ export const config = {
   
   // CORS configuration
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+      'http://localhost:3000',
+      // Allow ngrok and other tunnel URLs
+      /\.ngrok\.io$/,
+      /\.ngrok-free\.app$/,
+      /\.pinggy\.link$/,
+      /\.loca\.lt$/,
+      /\.serveo\.net$/,
+    ],
     credentials: true,
   },
 };

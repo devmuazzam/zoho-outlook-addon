@@ -1,5 +1,7 @@
 import { PrismaClient, Contact, Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
+import { zohoCRMService } from './zohoCRM';
+import { ZohoContact, ZohoAPIResponse } from '../config/zoho';
 
 export class ContactService {
   private db: PrismaClient;
@@ -197,6 +199,102 @@ export class ContactService {
       },
       orderBy: { updatedAt: 'asc' },
     });
+  }
+
+  // ===== ZOHO CRM API METHODS =====
+
+  /**
+   * Get contacts from Zoho CRM with pagination
+   */
+  async getContactsFromZoho(page: number = 1, perPage: number = 10): Promise<ZohoAPIResponse<{ data: ZohoContact[] }>> {
+    return zohoCRMService.makeAPICall<{ data: ZohoContact[] }>(`/Contacts?page=${page}&per_page=${perPage}`);
+  }
+
+  /**
+   * Get a specific contact from Zoho CRM by ID
+   */
+  async getContactFromZoho(contactId: string): Promise<ZohoAPIResponse<{ data: ZohoContact[] }>> {
+    return zohoCRMService.makeAPICall<{ data: ZohoContact[] }>(`/Contacts/${contactId}`);
+  }
+
+  /**
+   * Create a new contact in Zoho CRM
+   */
+  async createContactInZoho(contactData: Partial<ZohoContact>): Promise<ZohoAPIResponse<any>> {
+    const payload = {
+      data: [{
+        First_Name: contactData.First_Name,
+        Last_Name: contactData.Last_Name,
+        Email: contactData.Email,
+        Phone: contactData.Phone,
+        Company: contactData.Company
+      }]
+    };
+
+    const result = await zohoCRMService.makeAPICall('/Contacts', 'POST', payload);
+    
+    // If successful, sync the created contact to local database
+    if (result.success && result.data) {
+      try {
+        const responseData = result.data as any;
+        if (responseData?.data?.[0]?.details) {
+          await this.syncFromZoho(responseData.data[0].details);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Failed to sync created contact to local DB:', syncError);
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Update an existing contact in Zoho CRM
+   */
+  async updateContactInZoho(contactId: string, contactData: Partial<ZohoContact>): Promise<ZohoAPIResponse<any>> {
+    const payload = {
+      data: [{
+        id: contactId,
+        ...contactData
+      }]
+    };
+
+    const result = await zohoCRMService.makeAPICall(`/Contacts/${contactId}`, 'PUT', payload);
+    
+    // If successful, sync the updated contact to local database
+    if (result.success) {
+      try {
+        const updatedContact = await this.getContactFromZoho(contactId);
+        if (updatedContact.success && updatedContact.data?.data?.[0]) {
+          await this.syncFromZoho(updatedContact.data.data[0]);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Failed to sync updated contact to local DB:', syncError);
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Delete a contact from Zoho CRM
+   */
+  async deleteContactFromZoho(contactId: string): Promise<ZohoAPIResponse<any>> {
+    const result = await zohoCRMService.makeAPICall(`/Contacts/${contactId}`, 'DELETE');
+    
+    // If successful, mark as inactive in local database
+    if (result.success) {
+      try {
+        const localContact = await this.getContactByZohoId(contactId);
+        if (localContact) {
+          await this.deleteContact(localContact.id);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Failed to mark contact as inactive in local DB:', syncError);
+      }
+    }
+    
+    return result;
   }
 }
 

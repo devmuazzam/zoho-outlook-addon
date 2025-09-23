@@ -13,22 +13,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User management
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  role      Role     @default(USER)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Zoho authentication tokens
-  zohoTokens ZohoAuthToken[]
+// Organization management
+model Organization {
+  id          String   @id @default(cuid())
+  zohoOrgId   String   @unique // Zoho CRM organization ID
+  name        String?  // Company name
+  domain      String?  // Domain name
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  contacts Contact[]
-  leads    Lead[]
+  users User[]
+
+  @@map("organizations")
+}
+
+// User management
+model User {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  name           String?
+  zohoUserId     String?       @unique // Zoho CRM user ID
+  organizationId String?       // Link to organization
+  role           Role          @default(USER)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  zohoTokens   ZohoAuthToken[]
+  contacts     Contact[]
+  leads        Lead[]
 
   @@map("users")
 }

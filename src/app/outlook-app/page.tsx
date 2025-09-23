@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Card, 
-  CardContent, 
+import { useEffect, useState, useRef, useCallback } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
   Alert,
   CircularProgress,
   Divider,
   Chip,
-  Stack
+  Stack,
 } from '@mui/material';
-import { 
-  PersonAdd, 
-  Business, 
-  Email, 
-  Phone, 
+import {
+  PersonAdd,
+  Business,
+  Email,
+  Phone,
   Sync,
   CheckCircle,
   Error as ErrorIcon,
   Login,
   Security,
-  Refresh
+  Refresh,
 } from '@mui/icons-material';
 import OfficeInitializer from '../../components/OfficeInitializer';
 
@@ -68,11 +68,13 @@ export default function OutlookPage() {
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [authStatus, setAuthStatus] = useState<AuthStatus>({ authenticated: false });
+  const [authStatus, setAuthStatus] = useState<AuthStatus>({
+    authenticated: false,
+  });
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const [officeReady, setOfficeReady] = useState(false);
-  
+
   // Use refs to prevent multiple simultaneous operations
   const authCheckRef = useRef<NodeJS.Timeout | null>(null);
   const popupRef = useRef<Window | null>(null);
@@ -103,119 +105,138 @@ export default function OutlookPage() {
   }, []);
 
   // Memoized fetch with timeout
-  const fetchWithTimeout = useCallback(async (url: string, options: RequestInit = {}, timeout = API_TIMEOUT) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const fetchWithTimeout = useCallback(
+    async (url: string, options: RequestInit = {}, timeout = API_TIMEOUT) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      return response;
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        throw new Error('Request timeout');
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout');
+        }
+        throw error;
       }
-      throw error;
-    }
-  }, []);
+    },
+    []
+  );
 
   // Memoized auth check with retry logic
-  const checkAuthStatus = useCallback(async (silent = false) => {
-    // Prevent concurrent auth checks
-    if (isAuthCheckingRef.current) {
-      console.log('Auth check already in progress, skipping...');
-      return;
-    }
-
-    if (!mountedRef.current) return;
-
-    isAuthCheckingRef.current = true;
-    if (!silent) setIsCheckingAuth(true);
-
-    try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetchWithTimeout(`${backendUrl}/auth/zoho/status`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
-        credentials: 'include'
-      });
+  const checkAuthStatus = useCallback(
+    async (silent = false) => {
+      // Prevent concurrent auth checks
+      if (isAuthCheckingRef.current) {
+        console.log('Auth check already in progress, skipping...');
+        return;
+      }
 
       if (!mountedRef.current) return;
 
-      const result = await response.json();
-      
-      if (result.success) {
-        setAuthStatus(result.data);
-        setError(null);
-        retryCountRef.current = 0;
-      } else {
-        // Retry logic for failed auth checks
-        if (retryCountRef.current < MAX_RETRY_ATTEMPTS) {
+      isAuthCheckingRef.current = true;
+      if (!silent) setIsCheckingAuth(true);
+
+      try {
+        const backendUrl =
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const response = await fetchWithTimeout(
+          `${backendUrl}/auth/zoho/status`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache',
+            },
+            credentials: 'include',
+          }
+        );
+
+        if (!mountedRef.current) return;
+
+        const result = await response.json();
+
+        if (result.success) {
+          setAuthStatus(result.data);
+          setError(null);
+          retryCountRef.current = 0;
+        } else {
+          // Retry logic for failed auth checks
+          if (retryCountRef.current < MAX_RETRY_ATTEMPTS) {
+            retryCountRef.current++;
+            console.log(
+              `Retrying auth check (${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})...`
+            );
+            setTimeout(() => {
+              if (mountedRef.current) checkAuthStatus(silent);
+            }, RETRY_DELAY * retryCountRef.current);
+          } else {
+            setAuthStatus({ authenticated: false, error: result.message });
+            retryCountRef.current = 0;
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to check auth status:', err);
+        if (!mountedRef.current) return;
+
+        // Retry on network errors
+        if (
+          retryCountRef.current < MAX_RETRY_ATTEMPTS &&
+          err.message !== 'Request timeout'
+        ) {
           retryCountRef.current++;
-          console.log(`Retrying auth check (${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})...`);
           setTimeout(() => {
             if (mountedRef.current) checkAuthStatus(silent);
           }, RETRY_DELAY * retryCountRef.current);
         } else {
-          setAuthStatus({ authenticated: false, error: result.message });
+          setAuthStatus({
+            authenticated: false,
+            error:
+              err.message === 'Request timeout'
+                ? 'Connection timeout - please check your network'
+                : 'Failed to check authentication status',
+          });
           retryCountRef.current = 0;
         }
+      } finally {
+        isAuthCheckingRef.current = false;
+        if (!silent && mountedRef.current) setIsCheckingAuth(false);
       }
-    } catch (err: any) {
-      console.error('Failed to check auth status:', err);
-      if (!mountedRef.current) return;
-      
-      // Retry on network errors
-      if (retryCountRef.current < MAX_RETRY_ATTEMPTS && err.message !== 'Request timeout') {
-        retryCountRef.current++;
-        setTimeout(() => {
-          if (mountedRef.current) checkAuthStatus(silent);
-        }, RETRY_DELAY * retryCountRef.current);
-      } else {
-        setAuthStatus({ 
-          authenticated: false, 
-          error: err.message === 'Request timeout' 
-            ? 'Connection timeout - please check your network' 
-            : 'Failed to check authentication status' 
-        });
-        retryCountRef.current = 0;
-      }
-    } finally {
-      isAuthCheckingRef.current = false;
-      if (!silent && mountedRef.current) setIsCheckingAuth(false);
-    }
-  }, [fetchWithTimeout]);
+    },
+    [fetchWithTimeout]
+  );
 
   // Handle Office.js ready callback
-  const handleOfficeReady = useCallback((info: any) => {
-    console.log('Office.js ready - Host:', info?.host);
-    setOfficeReady(true);
-    
-    if (info?.host === window.Office?.HostType?.Outlook) {
-      extractContactInfo();
-    } else {
-      console.warn('Not running in Outlook, using demo data');
-      // Set demo data for development
-      setContactInfo({
-        name: "John Doe",
-        email: "john.doe@example.com",
-        phone: "+1-555-0123",
-        company: "Acme Corp",
-        subject: "Demo Email Subject",
-        body: "This is a demo email body for testing the Outlook add-in."
-      });
-    }
-    
-    // Initial auth check after Office is ready
-    checkAuthStatus(false);
-  }, [checkAuthStatus]);
+  const handleOfficeReady = useCallback(
+    (info: any) => {
+      console.log('Office.js ready - Host:', info?.host);
+      setOfficeReady(true);
+
+      if (info?.host === window.Office?.HostType?.Outlook) {
+        extractContactInfo();
+      } else {
+        console.warn('Not running in Outlook, using demo data');
+        // Set demo data for development
+        setContactInfo({
+          name: 'John Doe',
+          email: 'john.doe@example.com',
+          phone: '+1-555-0123',
+          company: 'Acme Corp',
+          subject: 'Demo Email Subject',
+          body: 'This is a demo email body for testing the Outlook add-in.',
+        });
+      }
+
+      // Initial auth check after Office is ready
+      checkAuthStatus(false);
+    },
+    [checkAuthStatus]
+  );
 
   // Set up periodic auth check (only after Office is ready)
   useEffect(() => {
@@ -243,7 +264,7 @@ export default function OutlookPage() {
     }
 
     // Force popup method (no permission dialog)
-      authenticateWithPopup();
+    authenticateWithPopup();
 
     // Check if we're in Office context with Dialog API support
     // if (window.Office?.context?.ui?.displayDialogAsync) {
@@ -259,17 +280,18 @@ export default function OutlookPage() {
     setSyncResult(null);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetchWithTimeout(`${backendUrl}/auth/zoho/login`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include'
+        credentials: 'include',
       });
-      
+
       const result = await response.json();
-      
+
       if (!result.success || !result.data?.authUrl) {
         throw new Error(result.message || 'Failed to get auth URL');
       }
@@ -294,17 +316,19 @@ export default function OutlookPage() {
         (asyncResult: any) => {
           if (!mountedRef.current) return;
 
-          if (asyncResult?.status === window.Office.AsyncResultStatus.Succeeded) {
+          if (
+            asyncResult?.status === window.Office.AsyncResultStatus.Succeeded
+          ) {
             const dialog = asyncResult.value;
             dialogRef.current = dialog;
-            
+
             // Handle message from dialog
             const messageHandler = async (arg: any) => {
               if (!mountedRef.current) return;
 
               try {
                 const data = JSON.parse(arg.message);
-                
+
                 if (data.success && data.code) {
                   // Exchange authorization code for tokens
                   try {
@@ -315,21 +339,27 @@ export default function OutlookPage() {
                         headers: {
                           'Content-Type': 'application/json',
                         },
-                        credentials: 'include'
+                        credentials: 'include',
                       }
                     );
 
                     const tokenResult = await tokenResponse.json();
-                    
+
                     if (tokenResponse.ok && tokenResult.success) {
-                      setAuthStatus({ authenticated: true, user: tokenResult.user });
+                      setAuthStatus({
+                        authenticated: true,
+                        user: tokenResult.user,
+                      });
                       setSyncResult({
                         success: true,
-                        message: 'Successfully authenticated with Zoho CRM!'
+                        message: 'Successfully authenticated with Zoho CRM!',
                       });
                       setError(null);
                     } else {
-                      setError(tokenResult.message || 'Failed to complete authentication');
+                      setError(
+                        tokenResult.message ||
+                          'Failed to complete authentication'
+                      );
                     }
                   } catch (tokenError: any) {
                     console.error('Token exchange error:', tokenError);
@@ -358,20 +388,29 @@ export default function OutlookPage() {
 
               const errorMessages: { [key: number]: string } = {
                 12006: 'Authentication cancelled by user',
-                12004: 'Zoho domain not in manifest. Please contact administrator.',
+                12004:
+                  'Zoho domain not in manifest. Please contact administrator.',
                 12003: 'HTTPS required for dialog',
                 12002: 'Dialog already opened',
-                12001: 'User navigated away'
+                12001: 'User navigated away',
               };
 
-              const errorMessage = errorMessages[arg?.error] || `Dialog error: ${arg?.error || 'Unknown'}`;
+              const errorMessage =
+                errorMessages[arg?.error] ||
+                `Dialog error: ${arg?.error || 'Unknown'}`;
               setError(errorMessage);
               dialogRef.current = null;
               setIsAuthenticating(false);
             };
 
-            dialog.addEventHandler(window.Office.EventType.DialogMessageReceived, messageHandler);
-            dialog.addEventHandler(window.Office.EventType.DialogEventReceived, eventHandler);
+            dialog.addEventHandler(
+              window.Office.EventType.DialogMessageReceived,
+              messageHandler
+            );
+            dialog.addEventHandler(
+              window.Office.EventType.DialogEventReceived,
+              eventHandler
+            );
 
             // Set timeout for dialog
             setTimeout(() => {
@@ -386,12 +425,12 @@ export default function OutlookPage() {
                 setIsAuthenticating(false);
               }
             }, AUTH_TIMEOUT);
-
           } else {
             const errorCode = asyncResult?.error?.code;
-            const errorMessage = errorCode === 12004
-              ? 'Zoho domain not included in Office manifest'
-              : `Failed to open dialog: ${asyncResult?.error?.message || 'Unknown error'}`;
+            const errorMessage =
+              errorCode === 12004
+                ? 'Zoho domain not included in Office manifest'
+                : `Failed to open dialog: ${asyncResult?.error?.message || 'Unknown error'}`;
             setError(errorMessage);
             setIsAuthenticating(false);
           }
@@ -415,17 +454,18 @@ export default function OutlookPage() {
     }
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetchWithTimeout(`${backendUrl}/auth/zoho/login`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include'
+        credentials: 'include',
       });
-      
+
       const result = await response.json();
-      
+
       if (!result.success || !result.data?.authUrl) {
         throw new Error(result.message || 'Failed to get auth URL');
       }
@@ -473,7 +513,6 @@ export default function OutlookPage() {
           setError('Authentication timeout');
         }
       }, AUTH_TIMEOUT);
-
     } catch (err: any) {
       console.error('Popup authentication error:', err);
       setError(`Authentication failed: ${err.message || 'Unknown error'}`);
@@ -502,17 +541,17 @@ export default function OutlookPage() {
       if (item.subject) {
         info.subject = item.subject;
       }
-      
+
       // Get body with proper null checks
       if (item.body && typeof item.body.getAsync === 'function') {
-        item.body.getAsync(
-          window.Office.CoercionType.Text,
-          (result: any) => {
-            if (result?.status === window.Office.AsyncResultStatus.Succeeded && mountedRef.current) {
-              setContactInfo(prev => ({ ...prev, body: result.value }));
-            }
+        item.body.getAsync(window.Office.CoercionType.Text, (result: any) => {
+          if (
+            result?.status === window.Office.AsyncResultStatus.Succeeded &&
+            mountedRef.current
+          ) {
+            setContactInfo((prev) => ({ ...prev, body: result.value }));
           }
-        );
+        });
       }
 
       setContactInfo(info);
@@ -545,20 +584,24 @@ export default function OutlookPage() {
         Phone: contactInfo.phone || '',
         Company: contactInfo.company || '',
         Lead_Source: 'Outlook Add-in',
-        Description: contactInfo.subject ? 
-          `Subject: ${contactInfo.subject}\n\n${contactInfo.body?.substring(0, 500) || ''}...` : 
-          contactInfo.body?.substring(0, 500) || ''
+        Description: contactInfo.subject
+          ? `Subject: ${contactInfo.subject}\n\n${contactInfo.body?.substring(0, 500) || ''}...`
+          : contactInfo.body?.substring(0, 500) || '',
       };
 
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetchWithTimeout(`${backendUrl}/api/zoho/crm/leads`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ data: [contactData] }),
-      });
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetchWithTimeout(
+        `${backendUrl}/api/zoho/crm/leads`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ data: [contactData] }),
+        }
+      );
 
       const result = await response.json();
 
@@ -566,17 +609,19 @@ export default function OutlookPage() {
         setSyncResult({
           success: true,
           message: 'Lead successfully synced to Zoho CRM!',
-          zohoId: result.data?.id || result.data?.[0]?.details?.id
+          zohoId: result.data?.id || result.data?.[0]?.details?.id,
         });
       } else {
-        throw new Error(result.message || result.error || 'Failed to sync to Zoho');
+        throw new Error(
+          result.message || result.error || 'Failed to sync to Zoho'
+        );
       }
     } catch (err: any) {
       console.error('Sync error:', err);
       const errorMessage = err.message || 'Unknown error occurred';
       setSyncResult({
         success: false,
-        message: `Failed to sync: ${errorMessage}`
+        message: `Failed to sync: ${errorMessage}`,
       });
       setError(errorMessage);
     } finally {
@@ -606,18 +651,22 @@ export default function OutlookPage() {
         Email: contactInfo.email,
         Phone: contactInfo.phone || '',
         Account_Name: contactInfo.company || '',
-        Description: `Added from Outlook on ${new Date().toLocaleDateString()}`
+        Description: `Added from Outlook on ${new Date().toLocaleDateString()}`,
       };
 
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetchWithTimeout(`${backendUrl}/api/zoho/crm/contacts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ data: [contactData] }),
-      });
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetchWithTimeout(
+        `${backendUrl}/api/zoho/crm/contacts`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ data: [contactData] }),
+        }
+      );
 
       const result = await response.json();
 
@@ -625,17 +674,19 @@ export default function OutlookPage() {
         setSyncResult({
           success: true,
           message: 'Contact successfully added to Zoho CRM!',
-          zohoId: result.data?.id || result.data?.[0]?.details?.id
+          zohoId: result.data?.id || result.data?.[0]?.details?.id,
         });
       } else {
-        throw new Error(result.message || result.error || 'Failed to add contact');
+        throw new Error(
+          result.message || result.error || 'Failed to add contact'
+        );
       }
     } catch (err: any) {
       console.error('Contact sync error:', err);
       const errorMessage = err.message || 'Unknown error occurred';
       setSyncResult({
         success: false,
-        message: `Failed to add contact: ${errorMessage}`
+        message: `Failed to add contact: ${errorMessage}`,
       });
       setError(errorMessage);
     } finally {
@@ -645,7 +696,11 @@ export default function OutlookPage() {
 
   const mainContent = (
     <Box sx={{ p: 2, maxWidth: 400, mx: 'auto' }}>
-      <Typography variant="h6" gutterBottom sx={{ textAlign: 'center', color: 'primary.main' }}>
+      <Typography
+        variant="h6"
+        gutterBottom
+        sx={{ textAlign: 'center', color: 'primary.main' }}
+      >
         Zoho CRM Integration
       </Typography>
 
@@ -656,8 +711,8 @@ export default function OutlookPage() {
       )}
 
       {syncResult && (
-        <Alert 
-          severity={syncResult.success ? "success" : "error"} 
+        <Alert
+          severity={syncResult.success ? 'success' : 'error'}
           sx={{ mb: 2 }}
           icon={syncResult.success ? <CheckCircle /> : <ErrorIcon />}
           onClose={() => setSyncResult(null)}
@@ -674,7 +729,14 @@ export default function OutlookPage() {
       {/* Authentication Status */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1,
+            }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Security fontSize="small" />
               <Typography variant="subtitle2">Authentication Status</Typography>
@@ -683,12 +745,14 @@ export default function OutlookPage() {
               size="small"
               onClick={() => checkAuthStatus(false)}
               disabled={isCheckingAuth}
-              startIcon={isCheckingAuth ? <CircularProgress size={14} /> : <Refresh />}
+              startIcon={
+                isCheckingAuth ? <CircularProgress size={14} /> : <Refresh />
+              }
             >
               {isCheckingAuth ? 'Checking...' : 'Refresh'}
             </Button>
           </Box>
-          
+
           {authStatus.authenticated ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <CheckCircle color="success" fontSize="small" />
@@ -703,7 +767,9 @@ export default function OutlookPage() {
             </Box>
           ) : (
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+              >
                 <ErrorIcon color="warning" fontSize="small" />
                 <Typography variant="body2" color="warning.main">
                   Not authenticated
@@ -714,7 +780,9 @@ export default function OutlookPage() {
                 size="small"
                 onClick={authenticateWithZoho}
                 disabled={isAuthenticating || isCheckingAuth}
-                startIcon={isAuthenticating ? <CircularProgress size={16} /> : <Login />}
+                startIcon={
+                  isAuthenticating ? <CircularProgress size={16} /> : <Login />
+                }
               >
                 {isAuthenticating ? 'Authenticating...' : 'Login with Zoho CRM'}
               </Button>
@@ -723,103 +791,13 @@ export default function OutlookPage() {
         </CardContent>
       </Card>
 
-      {authStatus.authenticated && (
-        <>
-          <Card sx={{ mb: 2 }}>
-            <CardContent>
-              <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.secondary' }}>
-                Contact Information
-              </Typography>
-              
-              <Stack spacing={1}>
-                {contactInfo.name && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <PersonAdd fontSize="small" color="action" />
-                    <Typography variant="body2" noWrap>{contactInfo.name}</Typography>
-                  </Box>
-                )}
-                
-                {contactInfo.email && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Email fontSize="small" color="action" />
-                    <Typography variant="body2" noWrap>{contactInfo.email}</Typography>
-                  </Box>
-                )}
-                
-                {contactInfo.phone && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Phone fontSize="small" color="action" />
-                    <Typography variant="body2" noWrap>{contactInfo.phone}</Typography>
-                  </Box>
-                )}
-                
-                {contactInfo.company && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Business fontSize="small" color="action" />
-                    <Typography variant="body2" noWrap>{contactInfo.company}</Typography>
-                  </Box>
-                )}
-              </Stack>
-
-              {contactInfo.subject && (
-                <>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.secondary' }}>
-                    Email Subject
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      mb: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                    }}
-                  >
-                    {contactInfo.subject}
-                  </Typography>
-                </>
-              )}
-
-              {!contactInfo.email && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  Select an email to extract contact information
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-
-          <Stack spacing={2}>
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={syncToZoho}
-              disabled={isLoading || !contactInfo.email}
-              startIcon={isLoading ? <CircularProgress size={20} /> : <Sync />}
-            >
-              {isLoading ? 'Syncing...' : 'Sync as Lead'}
-            </Button>
-
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={syncContactOnly}
-              disabled={isLoading || !contactInfo.email}
-              startIcon={isLoading ? <CircularProgress size={20} /> : <PersonAdd />}
-            >
-              {isLoading ? 'Adding...' : 'Add as Contact'}
-            </Button>
-          </Stack>
-        </>
-      )}
+      {authStatus.authenticated && <></>}
 
       <Box sx={{ mt: 2, textAlign: 'center' }}>
-        <Chip 
-          label={`Zoho CRM v2 ${officeReady ? '• Office Ready' : '• Loading...'}`} 
-          size="small" 
-          variant="outlined" 
+        <Chip
+          label={`Zoho CRM v2 ${officeReady ? '• Office Ready' : '• Loading...'}`}
+          size="small"
+          variant="outlined"
           color={officeReady ? 'success' : 'default'}
           sx={{ fontSize: '0.7rem' }}
         />

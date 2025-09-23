@@ -24,10 +24,6 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  setTimeout(() => {
-    window.close();
-  }, 1000);
-
   return (
     <Box
       sx={{

@@ -63,18 +63,18 @@ router.get('/callback', async (req: Request, res: Response) => {
     
     console.log('✅ Tokens received successfully');
     
-    // For web app, redirect to frontend with success message
+    // For web app, redirect to success page with success message
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const redirectUrl = `${frontendUrl}?auth=success&message=Authentication successful`;
+    const redirectUrl = `${frontendUrl}/auth/success?auth=success&message=Authentication successful`;
     
     res.redirect(redirectUrl);
     
   } catch (error: any) {
     console.error('❌ Token exchange failed:', error.message);
     
-    // Redirect to frontend with error
+    // Redirect to success page with error
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const redirectUrl = `${frontendUrl}?auth=error&message=${encodeURIComponent(error.message)}`;
+    const redirectUrl = `${frontendUrl}/auth/success?auth=error&message=${encodeURIComponent(error.message)}`;
     
     res.redirect(redirectUrl);
   }

@@ -90,6 +90,7 @@ router.get('/status', async (req: Request, res: Response) => {
     
     sendSuccess(res, {
       authenticated: authStatus.authenticated,
+      user: authStatus.user,
       message: authStatus.message,
       authUrl: authStatus.authUrl,
       tokenInfo: authStatus.tokens ? {

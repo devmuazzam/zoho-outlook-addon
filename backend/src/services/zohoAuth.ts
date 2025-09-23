@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { ZOHO_CONFIG, ZohoTokens, ZohoAuthResponse } from '../config/zoho';
+import { ZOHO_CONFIG, ZohoTokens, ZohoAuthResponse, ZohoUser } from '../config/zoho';
 import { sendSuccess, sendError } from '../utils/response';
 import prisma from '../lib/prisma';
 
@@ -361,11 +361,47 @@ export class ZohoAuthService {
 
     const isExpired = this.isTokenExpired(tokens);
 
+    if (isExpired) {
+      return {
+        success: true,
+        authenticated: false,
+        tokens: undefined,
+        message: 'Token expired. Please refresh or re-authenticate.',
+        authUrl: this.getAuthorizationUrl()
+      };
+    }
+
+    // Get user information when authenticated
+    let user: ZohoUser | undefined = undefined;
+    try {
+      const { zohoCRMService } = await import('./zohoCRM');
+      const userResponse = await zohoCRMService.getCurrentUser();
+
+      if (userResponse.success && userResponse.data?.users?.[0]) {
+        user = userResponse.data.users[0];
+
+        // Try to get organization information
+        try {
+          const orgResponse = await zohoCRMService.getOrganization();
+          if (orgResponse.success && orgResponse.data) {
+            user.organization = orgResponse.data.company_name || orgResponse.data.name;
+          }
+        } catch (orgError) {
+          console.warn('Failed to fetch organization information:', orgError);
+          // Don't fail if org info is not available
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch user information:', error);
+      // Don't fail the auth status if user fetch fails
+    }
+
     return {
       success: true,
-      authenticated: !isExpired,
-      tokens: isExpired ? undefined : tokens,
-      message: isExpired ? 'Token expired. Please refresh or re-authenticate.' : 'Authentication active'
+      authenticated: true,
+      tokens: tokens,
+      user: user,
+      message: 'Authentication active'
     };
   }
 

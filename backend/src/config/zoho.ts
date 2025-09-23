@@ -20,6 +20,7 @@ export interface ZohoAuthResponse {
   success: boolean;
   authenticated: boolean;
   tokens?: ZohoTokens;
+  user?: ZohoUser;
   authUrl?: string;
   message?: string;
   error?: string;
@@ -68,6 +69,8 @@ export interface ZohoUser {
     name: string;
     id: string;
   };
+  organization?: string;
+  zgid?: string;
 }
 
 export interface ZohoWebhookData {

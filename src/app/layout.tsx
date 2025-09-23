@@ -19,6 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <Script src="/office-compat.js" />
         <Script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js" />
       </head>
       <body className={`${inter.className} antialiased`}>

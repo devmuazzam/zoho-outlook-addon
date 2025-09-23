@@ -56,6 +56,13 @@ export class ZohoCRMService {
   }
 
   /**
+   * Get organization information
+   */
+  async getOrganization(): Promise<ZohoAPIResponse<any>> {
+    return this.makeAPICall('/org');
+  }
+
+  /**
    * Search records by criteria
    */
   async searchRecords(

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Typography,
@@ -64,6 +65,7 @@ const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY = 1000; // 1 second
 
 export default function OutlookPage() {
+  const router = useRouter();
   const [contactInfo, setContactInfo] = useState<ContactInfo>({});
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -74,6 +76,7 @@ export default function OutlookPage() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const [officeReady, setOfficeReady] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
 
   // Use refs to prevent multiple simultaneous operations
   const authCheckRef = useRef<NodeJS.Timeout | null>(null);
@@ -82,6 +85,7 @@ export default function OutlookPage() {
   const isAuthCheckingRef = useRef(false);
   const mountedRef = useRef(true);
   const retryCountRef = useRef(0);
+  const redirectStartedRef = useRef(false);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -101,6 +105,7 @@ export default function OutlookPage() {
           console.log('Dialog already closed');
         }
       }
+      redirectStartedRef.current = false;
     };
   }, []);
 
@@ -162,9 +167,37 @@ export default function OutlookPage() {
         const result = await response.json();
 
         if (result.success) {
+          const wasAuthenticated = authStatus.authenticated;
           setAuthStatus(result.data);
           setError(null);
           retryCountRef.current = 0;
+
+          // If user just became authenticated, redirect to dashboard after 3 seconds
+          if (!wasAuthenticated && result.data.authenticated && result.data.user && !redirectStartedRef.current) {
+            console.log('Authentication successful, redirecting to dashboard in 3 seconds...');
+            redirectStartedRef.current = true;
+            setRedirectCountdown(3);
+
+            const countdownInterval = setInterval(() => {
+              setRedirectCountdown((prev) => {
+                if (prev === null || prev <= 1) {
+                  clearInterval(countdownInterval);
+                  return null;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+
+            // Separate timeout for redirect
+            setTimeout(() => {
+              if (mountedRef.current) {
+                console.log('3 seconds elapsed, redirecting to dashboard...');
+                clearInterval(countdownInterval);
+                setRedirectCountdown(null);
+                router.push('/dashboard');
+              }
+            }, 3000);
+          }
         } else {
           // Retry logic for failed auth checks
           if (retryCountRef.current < MAX_RETRY_ATTEMPTS) {
@@ -177,6 +210,7 @@ export default function OutlookPage() {
             }, RETRY_DELAY * retryCountRef.current);
           } else {
             setAuthStatus({ authenticated: false, error: result.message });
+            redirectStartedRef.current = false; // Reset redirect flag on auth failure
             retryCountRef.current = 0;
           }
         }
@@ -754,16 +788,50 @@ export default function OutlookPage() {
           </Box>
 
           {authStatus.authenticated ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CheckCircle color="success" fontSize="small" />
-              <Typography variant="body2" color="success.main">
-                Connected to Zoho CRM
-                {authStatus.user?.email && (
-                  <Typography variant="caption" display="block">
-                    {authStatus.user.email}
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <CheckCircle color="success" fontSize="small" />
+                <Typography variant="body2" color="success.main">
+                  Connected to Zoho CRM
+                </Typography>
+              </Box>
+              {authStatus.user && (
+                <Box sx={{ ml: 3, mb: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                    {authStatus.user.display_name || authStatus.user.full_name || 
+                     `${authStatus.user.first_name || ''} ${authStatus.user.last_name || ''}`.trim() || 
+                     'User'}
                   </Typography>
-                )}
-              </Typography>
+                  {authStatus.user.email && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {authStatus.user.email}
+                    </Typography>
+                  )}
+                  {authStatus.user.zgid && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      ZGID: {authStatus.user.zgid}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+              {redirectCountdown !== null && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    🎉 Authentication successful! Redirecting to dashboard in {redirectCountdown} second{redirectCountdown !== 1 ? 's' : ''}...
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    onClick={() => {
+                      setRedirectCountdown(null);
+                      router.push('/dashboard');
+                    }}
+                  >
+                    Go to Dashboard Now
+                  </Button>
+                </Alert>
+              )}
             </Box>
           ) : (
             <Box>

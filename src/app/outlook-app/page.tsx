@@ -242,12 +242,15 @@ export default function OutlookPage() {
       return;
     }
 
-    // Check if we're in Office context with Dialog API support
-    if (window.Office?.context?.ui?.displayDialogAsync) {
-      authenticateWithOfficeDialog();
-    } else {
+    // Force popup method (no permission dialog)
       authenticateWithPopup();
-    }
+
+    // Check if we're in Office context with Dialog API support
+    // if (window.Office?.context?.ui?.displayDialogAsync) {
+    //   authenticateWithOfficeDialog();
+    // } else {
+    //   authenticateWithPopup();
+    // }
   };
 
   const authenticateWithOfficeDialog = async () => {

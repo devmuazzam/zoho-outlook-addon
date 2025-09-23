@@ -16,11 +16,45 @@
   <Description DefaultValue="Integrate Outlook with Zoho CRM for seamless contact and lead management" />
   <IconUrl DefaultValue="https://dummyimage.com/64x64.png" />
   <HighResolutionIconUrl DefaultValue="https://dummyimage.com/128x128.png" />
-  <SupportUrl DefaultValue="https://6a2a75842988.ngrok-free.app/support" />
-  
-    <!-- App Domains -->
+  <SupportUrl DefaultValue="https://fdebf9bb69a6.ngrok-free.app/outlook-app" />
+
+  <!-- App Domains - UPDATED with complete Zoho domains -->
   <AppDomains>
+    <!-- Zoho Accounts Domains -->
+    <AppDomain>https://accounts.zoho.com</AppDomain>
+    <AppDomain>https://accounts.zoho.in</AppDomain>
+    <AppDomain>https://accounts.zoho.eu</AppDomain>
+    <AppDomain>https://accounts.zoho.com.au</AppDomain>
+    <AppDomain>https://accounts.zoho.com.cn</AppDomain>
+    <AppDomain>https://accounts.zoho.jp</AppDomain>
+    
+    <!-- Zoho OAuth Domains -->
+    <AppDomain>https://oauth.zoho.com</AppDomain>
+    <AppDomain>https://oauth.zoho.in</AppDomain>
+    <AppDomain>https://oauth.zoho.eu</AppDomain>
+    <AppDomain>https://oauth.zoho.com.au</AppDomain>
+    <AppDomain>https://oauth.zoho.com.cn</AppDomain>
+    <AppDomain>https://oauth.zoho.jp</AppDomain>
+    
+    <!-- Zoho CRM API Domains -->
+    <AppDomain>https://www.zohoapis.com</AppDomain>
+    <AppDomain>https://www.zohoapis.in</AppDomain>
+    <AppDomain>https://www.zohoapis.eu</AppDomain>
+    <AppDomain>https://www.zohoapis.com.au</AppDomain>
+    <AppDomain>https://www.zohoapis.com.cn</AppDomain>
+    <AppDomain>https://www.zohoapis.jp</AppDomain>
+    
+    <!-- Zoho Main Domains (for redirects) -->
+    <AppDomain>https://crm.zoho.com</AppDomain>
+    <AppDomain>https://crm.zoho.in</AppDomain>
+    <AppDomain>https://crm.zoho.eu</AppDomain>
+    <AppDomain>https://crm.zoho.com.au</AppDomain>
+    <AppDomain>https://crm.zoho.com.cn</AppDomain>
+    <AppDomain>https://crm.zoho.jp</AppDomain>
+    
+    <!-- Your App Domains -->
     <AppDomain>https://6a2a75842988.ngrok-free.app</AppDomain>
+    <AppDomain>https://fdebf9bb69a6.ngrok-free.app</AppDomain>
   </AppDomains>
   
   <!-- Hosts -->
@@ -39,7 +73,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-                <SourceLocation DefaultValue="https://6a2a75842988.ngrok-free.app/outlook-app" />
+        <SourceLocation DefaultValue="https://fdebf9bb69a6.ngrok-free.app/outlook-app" />
         <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -149,8 +183,8 @@
         <bt:Image id="Icon.80x80" DefaultValue="https://via.placeholder.com/80x80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Functions.Url" DefaultValue="https://6a2a75842988.ngrok-free.app/functions.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://6a2a75842988.ngrok-free.app/outlook-app"/>
+        <bt:Url id="Functions.Url" DefaultValue="https://fdebf9bb69a6.ngrok-free.app/functions.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://fdebf9bb69a6.ngrok-free.app/outlook-app"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Zoho V2 CRM"/>

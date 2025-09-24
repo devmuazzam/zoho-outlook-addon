@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Box,
@@ -12,6 +12,7 @@ import {
   Stack,
   Chip,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -33,7 +34,7 @@ interface AuthStatus {
   message?: string;
 }
 
-export default function AuthSuccessPage() {
+function AuthSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
@@ -297,5 +298,25 @@ export default function AuthSuccessPage() {
         />
       </Box>
     </Box>
+  );
+}
+
+export default function AuthSuccessPage() {
+  return (
+    <Suspense fallback={
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress size={60} />
+      </Box>
+    }>
+      <AuthSuccessContent />
+    </Suspense>
   );
 }

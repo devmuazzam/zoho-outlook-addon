@@ -16,7 +16,7 @@
   <Description DefaultValue="Integrate Outlook with Zoho CRM for seamless contact and lead management" />
   <IconUrl DefaultValue="https://dummyimage.com/64x64.png" />
   <HighResolutionIconUrl DefaultValue="https://dummyimage.com/128x128.png" />
-  <SupportUrl DefaultValue="https://fdebf9bb69a6.ngrok-free.app/outlook-app" />
+  <SupportUrl DefaultValue="https://adbd4ee0801f.ngrok-free.app/outlook-app" />
 
   <!-- App Domains - UPDATED with complete Zoho domains -->
   <AppDomains>
@@ -53,8 +53,7 @@
     <AppDomain>https://crm.zoho.jp</AppDomain>
     
     <!-- Your App Domains -->
-    <AppDomain>https://6a2a75842988.ngrok-free.app</AppDomain>
-    <AppDomain>https://fdebf9bb69a6.ngrok-free.app</AppDomain>
+    <AppDomain>https://adbd4ee0801f.ngrok-free.app</AppDomain>
   </AppDomains>
   
   <!-- Hosts -->
@@ -73,7 +72,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://fdebf9bb69a6.ngrok-free.app/outlook-app" />
+        <SourceLocation DefaultValue="https://adbd4ee0801f.ngrok-free.app/outlook-app" />
         <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -183,8 +182,8 @@
         <bt:Image id="Icon.80x80" DefaultValue="https://via.placeholder.com/80x80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Functions.Url" DefaultValue="https://fdebf9bb69a6.ngrok-free.app/functions.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://fdebf9bb69a6.ngrok-free.app/outlook-app"/>
+        <bt:Url id="Functions.Url" DefaultValue="https://adbd4ee0801f.ngrok-free.app/functions.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://adbd4ee0801f.ngrok-free.app/outlook-app"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Zoho V2 CRM"/>

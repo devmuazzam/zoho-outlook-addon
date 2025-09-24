@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force dynamic rendering for this route since it uses searchParams
+export const dynamic = 'force-dynamic';
+
 /**
  * Zoho OAuth callback handler
  * This route receives the OAuth callback from Zoho and proxies it to the backend

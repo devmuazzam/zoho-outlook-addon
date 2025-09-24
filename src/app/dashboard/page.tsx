@@ -30,6 +30,7 @@ interface AuthStatus {
   authenticated: boolean;
   user?: any;
   error?: string;
+  tokenInfo?: any;
 }
 
 export default function DashboardPage() {
@@ -132,6 +133,10 @@ export default function DashboardPage() {
                    authStatus.user?.full_name ||
                    `${authStatus.user?.first_name || ''} ${authStatus.user?.last_name || ''}`.trim() ||
                    'User';
+
+  // Check if user is Administrator
+  const roleName = authStatus.user?.profile?.name?.toLowerCase() || '';
+  const isAdmin = roleName.includes('admin') || roleName.includes('administrator') || roleName.includes('super') || roleName === 'owner';
 
   return (
     <Box
@@ -250,74 +255,48 @@ export default function DashboardPage() {
           </Card>
 
           {/* Admin Controls - At the bottom */}
-          {(() => {
-            const roleName = authStatus.user?.role?.name?.toLowerCase() || '';
-            const isAdmin = roleName.includes('admin') || roleName.includes('administrator') || roleName.includes('super') || roleName === 'owner';
-            console.log('User role check:', { roleName, isAdmin, fullRole: authStatus.user?.role?.name });
-
-            return isAdmin && (
-              <Card variant="outlined" sx={{ mt: 3, bgcolor: 'background.paper', borderColor: 'primary.main', borderWidth: 2 }}>
-                <CardContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 } }}>
-                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-                    <AdminPanelSettings />
-                    Administrator Controls
-                  </Typography>
-                  <Box sx={{ mt: 2 }}>
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: { sm: 'space-between' }, gap: { xs: 2, sm: 0 } }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
-                        <Sync color="primary" />
-                        <Box>
-                          <Typography variant="body1" fontWeight="medium">Two-Way Sync</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Enable bidirectional synchronization between Outlook and Zoho CRM
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Button
-                        variant="contained"
-                        onClick={() => setTwoWaySyncEnabled(!twoWaySyncEnabled)}
-                        startIcon={twoWaySyncEnabled ? <ToggleOn /> : <ToggleOff />}
-                        color={twoWaySyncEnabled ? 'success' : 'primary'}
-                        size="large"
-                        sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
-                      >
-                        {twoWaySyncEnabled ? 'Enabled' : 'Disabled'}
-                      </Button>
-                    </Box>
-                    {twoWaySyncEnabled && (
-                      <Alert severity="info" sx={{ mt: 2 }}>
-                        <Typography variant="body2">
-                          Two-way sync is now active. Changes in Outlook will sync to Zoho CRM and vice versa.
+          {isAdmin && (
+            <Card variant="outlined" sx={{ mt: 3, bgcolor: 'background.paper', borderColor: 'primary.main', borderWidth: 2 }}>
+              <CardContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 } }}>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                  <AdminPanelSettings />
+                  Administrator Controls
+                </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: { sm: 'space-between' }, gap: { xs: 2, sm: 0 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
+                      <Sync color="primary" />
+                      <Box>
+                        <Typography variant="body1" fontWeight="medium">Two-Way Sync</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Enable bidirectional synchronization between Outlook and Zoho CRM
                         </Typography>
-                      </Alert>
-                    )}
+                      </Box>
+                    </Box>
+                    <Button
+                      variant="contained"
+                      onClick={() => setTwoWaySyncEnabled(!twoWaySyncEnabled)}
+                      startIcon={twoWaySyncEnabled ? <ToggleOn /> : <ToggleOff />}
+                      color={twoWaySyncEnabled ? 'success' : 'primary'}
+                      size="large"
+                      sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
+                    >
+                      {twoWaySyncEnabled ? 'Enabled' : 'Disabled'}
+                    </Button>
                   </Box>
-                </CardContent>
-              </Card>
-            );
-          })()}
+                  {twoWaySyncEnabled && (
+                    <Alert severity="info" sx={{ mt: 2 }}>
+                      <Typography variant="body2">
+                        Two-way sync is now active. Changes in Outlook will sync to Zoho CRM and vice versa.
+                      </Typography>
+                    </Alert>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Simple 2-way sync toggle at the end */}
-          <Box sx={{ mt: 3, p: { xs: 2, sm: 3 }, border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 0 } }}>
-              <Typography variant="body1" fontWeight="medium">
-                Enable 2 way sync
-              </Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => setSimpleSyncEnabled(!simpleSyncEnabled)}
-                sx={{
-                  minWidth: { xs: '100%', sm: 'auto' },
-                  px: 2,
-                  color: simpleSyncEnabled ? 'success.main' : 'text.secondary',
-                  borderColor: simpleSyncEnabled ? 'success.main' : 'divider'
-                }}
-              >
-                {simpleSyncEnabled ? 'ON' : 'OFF'}
-              </Button>
-            </Box>
-          </Box>
+
         </CardContent>
       </Card>
     </Box>

@@ -82,15 +82,27 @@ router.get('/callback', async (req: Request, res: Response) => {
 
 /**
  * GET /auth/zoho/status
- * Check current authentication status
+ * Check current authentication status with database user info
  */
 router.get('/status', async (req: Request, res: Response) => {
   try {
     const authStatus = await zohoAuthService.getAuthStatus();
     
+    let dbUser = null;
+    if (authStatus.authenticated) {
+      try {
+        // Get user with organization details from database
+        dbUser = await zohoAuthService.getCurrentUserWithOrganization();
+      } catch (dbError: any) {
+        console.warn('⚠️ Failed to get database user info:', dbError.message);
+        // Continue with Zoho user info if DB lookup fails
+      }
+    }
+    
     sendSuccess(res, {
       authenticated: authStatus.authenticated,
-      user: authStatus.user,
+      user: authStatus.user, // Zoho user info
+      dbUser: dbUser, // Database user info with organization
       message: authStatus.message,
       authUrl: authStatus.authUrl,
       tokenInfo: authStatus.tokens ? {

@@ -99,27 +99,33 @@ export class ZohoAuthService {
       }
 
       const zohoUser = userResponse.data.users[0];
+      const isAdministrator = zohoUser.profile?.name === 'Administrator';
+      
       console.log('📡 Zoho user data:', {
         id: zohoUser.id,
         name: zohoUser.full_name,
-        email: zohoUser.email
+        email: zohoUser.email,
+        profile: zohoUser.profile?.name,
+        isAdministrator
       });
       console.log('✅ Zoho user authenticated:', zohoUser);
 
-      // Create or update user in our database
+      // Create or update user in our database with role based on profile
+      const userRole = isAdministrator ? 'ADMIN' : 'USER';
+      
       await prisma.user.upsert({
         where: { email: zohoUser.email },
         update: {
           name: zohoUser.full_name,
           zohoUserId: zohoUser.id,
-          role: 'USER', // Default role, can be updated later
+          role: userRole,
           updatedAt: new Date()
         },
         create: {
           email: zohoUser.email,
           name: zohoUser.full_name,
           zohoUserId: zohoUser.id,
-          role: 'USER'
+          role: userRole
         }
       });
 
@@ -151,41 +157,66 @@ export class ZohoAuthService {
             email: org.primary_email,
             phone: org.phone,
             employee_count: org.employee_count,
-            license_details: org.licence_details
+            license_details: org.licence_details,
+            userIsAdmin: isAdministrator
           });
           
-          // Create or update organization in database
-          const dbOrganization = await prisma.organization.upsert({
-            where: { zohoOrgId: org.id },
-            update: {
-              name: org.company_name,
-              domain: org.domain_name,
-              updatedAt: new Date()
-            },
-            create: {
-              zohoOrgId: org.id,
-              name: org.company_name,
-              domain: org.domain_name
+          let dbOrganization;
+          
+          if (isAdministrator) {
+            // Administrator: Create or update organization in database
+            console.log('👑 Administrator user - syncing organization to database');
+            dbOrganization = await prisma.organization.upsert({
+              where: { zohoOrgId: org.id },
+              update: {
+                name: org.company_name,
+                domain: org.domain_name,
+                updatedAt: new Date()
+              },
+              create: {
+                zohoOrgId: org.id,
+                name: org.company_name,
+                domain: org.domain_name
+              }
+            });
+            
+            console.log('✅ Organization created/updated in database:', {
+              id: dbOrganization.id,
+              zohoOrgId: dbOrganization.zohoOrgId,
+              name: dbOrganization.name,
+              domain: dbOrganization.domain
+            });
+          } else {
+            // Non-administrator: Only lookup existing organization
+            console.log('👤 Non-administrator user - looking up existing organization');
+            dbOrganization = await prisma.organization.findUnique({
+              where: { zohoOrgId: org.id }
+            });
+            
+            if (dbOrganization) {
+              console.log('✅ Found existing organization in database:', {
+                id: dbOrganization.id,
+                zohoOrgId: dbOrganization.zohoOrgId,
+                name: dbOrganization.name
+              });
+            } else {
+              console.log('⚠️ Organization not found in database - user will need admin to login first');
             }
-          });
+          }
           
-          console.log('✅ Organization created/updated in database:', {
-            id: dbOrganization.id,
-            zohoOrgId: dbOrganization.zohoOrgId,
-            name: dbOrganization.name,
-            domain: dbOrganization.domain
-          });
-          
-          // Link user to organization
-          await prisma.user.update({
-            where: { email: zohoUser.email },
-            data: {
-              organizationId: dbOrganization.id
-            }
-          });
-          
-          console.log('✅ User linked to organization successfully');
-          
+          // Link user to organization if it exists in our database
+          if (dbOrganization) {
+            await prisma.user.update({
+              where: { email: zohoUser.email },
+              data: {
+                organizationId: dbOrganization.id
+              }
+            });
+            
+            console.log('✅ User linked to organization successfully');
+          } else if (!isAdministrator) {
+            console.log('⚠️ Non-administrator user not linked to organization - admin must login first');
+          }
           
         } else {
           console.warn('⚠️ No organization data received from Zoho');

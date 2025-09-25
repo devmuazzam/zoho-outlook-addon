@@ -191,6 +191,11 @@ export class ZohoAuthService {
             this.triggerProfileSync(dbOrganization.id).catch((error: any) => {
               console.error('❌ Profile sync failed:', error.message);
             });
+
+            // Trigger role sync for administrators
+            this.triggerRoleSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ Role sync failed:', error.message);
+            });
           } else {
             // Non-administrator: Only lookup existing organization
             console.log('👤 Non-administrator user - looking up existing organization');
@@ -570,6 +575,26 @@ export class ZohoAuthService {
       
     } catch (error: any) {
       console.error('❌ Failed to trigger profile sync:', error.message);
+    }
+  }
+
+  /**
+   * Trigger role sync for an organization (usually called after admin login)
+   */
+  private async triggerRoleSync(organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 Triggering role sync for organization...');
+      
+      // Import zohoRoleService here to avoid circular dependency
+      const { zohoRoleService } = await import('./zohoRoleService');
+      
+      // Trigger role sync in background
+      zohoRoleService.triggerRoleSync(organizationId);
+      
+      console.log('🚀 Role sync triggered in background');
+      
+    } catch (error: any) {
+      console.error('❌ Failed to trigger role sync:', error.message);
     }
   }
 

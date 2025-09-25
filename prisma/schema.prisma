@@ -15,8 +15,9 @@ model Organization {
   isActive  Boolean       @default(true)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
-  users     User[]
-  profiles  ZohoProfile[]
+  users User[]
+  profiles ZohoProfile[]
+  roles ZohoRole[]
 
   @@map("organizations")
 }
@@ -53,9 +54,38 @@ model ZohoProfilePermission {
   profile      ZohoProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, zohoPermId])
-  @@map("zoho_profile_permissions")
+    @@map("zoho_profile_permissions")
 }
 
+// Zoho CRM Roles
+model ZohoRole {
+  id               String    @id @default(cuid())
+  zohoRoleId       String    @unique // Zoho CRM role ID
+  name             String    // Role name
+  displayLabel     String    // Display label from API
+  description      String?   // Role description
+  shareWithPeers   Boolean   @default(false) // share_with_peers from API
+  forecastManager  String?   // forecast_manager from API
+  reportingToId    String?   // reporting_to.id from API
+  reportingToName  String?   // reporting_to.name from API
+  createdById      String?   // created_by__s.id from API
+  createdByName    String?   // created_by__s.name from API
+  modifiedById     String?   // modified_by__s.id from API
+  modifiedByName   String?   // modified_by__s.name from API
+  createdTime      DateTime? // From Zoho API (can be null)
+  modifiedTime     DateTime? // From Zoho API (can be null)
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("zoho_roles")
+}
+
+// User management
 model User {
   id             String         @id @default(cuid())
   email          String         @unique

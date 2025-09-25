@@ -186,6 +186,11 @@ export class ZohoAuthService {
               name: dbOrganization.name,
               domain: dbOrganization.domain
             });
+
+            // Trigger profile sync for administrators
+            this.triggerProfileSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ Profile sync failed:', error.message);
+            });
           } else {
             // Non-administrator: Only lookup existing organization
             console.log('👤 Non-administrator user - looking up existing organization');
@@ -316,11 +321,11 @@ export class ZohoAuthService {
         include: { zohoTokens: true }
       });
 
-      if (!user || !user.zohoTokens || user.zohoTokens.length === 0) {
+      if (!user || !user.zohoTokens) {
         return null;
       }
 
-      const tokenRecord = user.zohoTokens[0];
+      const tokenRecord = user.zohoTokens;
       return {
         access_token: tokenRecord.accessToken,
         refresh_token: tokenRecord.refreshToken || undefined,
@@ -475,8 +480,11 @@ export class ZohoAuthService {
       });
 
       if (user) {
-        await prisma.zohoAuthToken.deleteMany({
+        await prisma.zohoAuthToken.delete({
           where: { userId: user.id }
+        }).catch(() => {
+          // Token might not exist, ignore error
+          console.log('⚠️ No token to delete or token already deleted');
         });
         console.log('✅ Tokens cleared from database');
       }
@@ -543,6 +551,26 @@ export class ZohoAuthService {
    */
   private isTokenExpired(tokens: ZohoTokens): boolean {
     return Date.now() > tokens.expires_at;
+  }
+
+  /**
+   * Trigger profile sync for an organization (usually called after admin login)
+   */
+  private async triggerProfileSync(organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 Triggering profile sync for organization...');
+      
+      // Import zohoProfileService here to avoid circular dependency
+      const { zohoProfileService } = await import('./zohoProfileService');
+      
+      // Trigger profile sync in background
+      zohoProfileService.triggerProfileSync(organizationId);
+      
+      console.log('🚀 Profile sync triggered in background');
+      
+    } catch (error: any) {
+      console.error('❌ Failed to trigger profile sync:', error.message);
+    }
   }
 
   /**

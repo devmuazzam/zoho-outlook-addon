@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,104 +7,120 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Organization management
 model Organization {
-  id          String   @id @default(cuid())
-  zohoOrgId   String   @unique // Zoho CRM organization ID
-  name        String?  // Company name
-  domain      String?  // Domain name
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  users User[]
+  id        String        @id @default(cuid())
+  zohoOrgId String        @unique
+  name      String?
+  domain    String?
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  users     User[]
+  profiles  ZohoProfile[]
 
   @@map("organizations")
 }
 
-// User management
-model User {
-  id             String        @id @default(cuid())
-  email          String        @unique
-  name           String?
-  zohoUserId     String?       @unique // Zoho CRM user ID
-  organizationId String?       // Link to organization
-  role           Role          @default(USER)
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+model ZohoProfile {
+  id             String                  @id @default(cuid())
+  zohoProfileId  String                  @unique
+  name           String
+  description    String?
+  isActive       Boolean                 @default(true)
+  createdTime    DateTime?
+  modifiedTime   DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  organizationId String
+  custom         Boolean                 @default(false)
+  displayLabel   String
+  permissions    ZohoProfilePermission[]
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  // Relations
-  organization Organization? @relation(fields: [organizationId], references: [id])
-  zohoTokens   ZohoAuthToken[]
-  contacts     Contact[]
-  leads        Lead[]
+  @@map("zoho_profiles")
+}
+
+model ZohoProfilePermission {
+  id           String      @id @default(cuid())
+  profileId    String
+  zohoPermId   String
+  name         String
+  displayLabel String
+  module       String
+  enabled      Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  profile      ZohoProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, zohoPermId])
+  @@map("zoho_profile_permissions")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  name           String?
+  zohoUserId     String?        @unique
+  organizationId String?
+  role           Role           @default(USER)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  contacts       Contact[]
+  leads          Lead[]
+  organization   Organization?  @relation(fields: [organizationId], references: [id])
+  zohoTokens     ZohoAuthToken?
 
   @@map("users")
 }
 
-// Zoho authentication tokens storage
 model ZohoAuthToken {
-  id           String    @id @default(cuid())
-  userId       String
-  accessToken  String    @db.Text
-  refreshToken String?   @db.Text
-  tokenType    String    @default("Bearer")
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  accessToken  String
+  refreshToken String?
+  tokenType    String   @default("Bearer")
   expiresAt    DateTime
   scopes       String[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId])
   @@map("zoho_auth_tokens")
 }
 
-// Contacts from Zoho CRM
 model Contact {
-  id          String    @id @default(cuid())
-  zohoId      String?   @unique // Zoho CRM contact ID
-  firstName   String?
-  lastName    String?
-  email       String?
-  phone       String?
-  mobile      String?
-  company     String?
-  title       String?
-  department  String?
-  leadSource  String?
-  description String?   @db.Text
-  
-  // Address information
+  id             String            @id @default(cuid())
+  zohoId         String?           @unique
+  firstName      String?
+  lastName       String?
+  email          String?
+  phone          String?
+  mobile         String?
+  company        String?
+  title          String?
+  department     String?
+  leadSource     String?
+  description    String?
   mailingStreet  String?
   mailingCity    String?
   mailingState   String?
   mailingZip     String?
   mailingCountry String?
-  
-  // System fields
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  syncedAt    DateTime @default(now()) // Last sync with Zoho
-  
-  // Relations
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
-  
-  // Contact activities
-  activities ContactActivity[]
-  
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  syncedAt       DateTime          @default(now())
+  userId         String?
+  activities     ContactActivity[]
+  user           User?             @relation(fields: [userId], references: [id])
+
   @@map("contacts")
 }
 
-// Leads from Zoho CRM
 model Lead {
-  id          String     @id @default(cuid())
-  zohoId      String?    @unique // Zoho CRM lead ID
+  id          String         @id @default(cuid())
+  zohoId      String?        @unique
   firstName   String?
   lastName    String?
   email       String?
@@ -120,94 +130,78 @@ model Lead {
   title       String?
   industry    String?
   leadSource  String?
-  leadStatus  LeadStatus @default(NEW)
+  leadStatus  LeadStatus     @default(NEW)
   rating      String?
-  description String?    @db.Text
-  
-  // Address information
-  street  String?
-  city    String?
-  state   String?
-  zip     String?
-  country String?
-  
-  // System fields
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  syncedAt    DateTime @default(now()) // Last sync with Zoho
-  
-  // Relations
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
-  
-  // Lead activities
-  activities LeadActivity[]
-  
+  description String?
+  street      String?
+  city        String?
+  state       String?
+  zip         String?
+  country     String?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  syncedAt    DateTime       @default(now())
+  userId      String?
+  activities  LeadActivity[]
+  user        User?          @relation(fields: [userId], references: [id])
+
   @@map("leads")
 }
 
-// Contact activities/interactions
 model ContactActivity {
-  id          String            @id @default(cuid())
+  id          String           @id @default(cuid())
   contactId   String
   type        ActivityType
   subject     String?
-  description String?           @db.Text
-  status      ActivityStatus    @default(PLANNED)
-  priority    ActivityPriority  @default(MEDIUM)
+  description String?
+  status      ActivityStatus   @default(PLANNED)
+  priority    ActivityPriority @default(MEDIUM)
   dueDate     DateTime?
   completedAt DateTime?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  // Relations
-  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  contact     Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@map("contact_activities")
 }
 
-// Lead activities/interactions
 model LeadActivity {
-  id          String            @id @default(cuid())
+  id          String           @id @default(cuid())
   leadId      String
   type        ActivityType
   subject     String?
-  description String?           @db.Text
-  status      ActivityStatus    @default(PLANNED)
-  priority    ActivityPriority  @default(MEDIUM)
+  description String?
+  status      ActivityStatus   @default(PLANNED)
+  priority    ActivityPriority @default(MEDIUM)
   dueDate     DateTime?
   completedAt DateTime?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  // Relations
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  lead        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@map("lead_activities")
 }
 
-// Webhook logs for debugging
 model WebhookLog {
-  id        String      @id @default(cuid())
-  source    String      // "zoho", "other"
-  event     String      // "contact.created", "lead.updated", etc.
-  module    String?     // "Contacts", "Leads", etc.
-  operation String?     // "insert", "update", "delete"
+  id        String        @id @default(cuid())
+  source    String
+  event     String
+  module    String?
+  operation String?
   payload   Json
   status    WebhookStatus @default(RECEIVED)
-  error     String?     @db.Text
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  error     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@map("webhook_logs")
 }
 
-// Application settings
 model AppSetting {
   id        String   @id @default(cuid())
   key       String   @unique
-  value     String   @db.Text
+  value     String
   category  String   @default("general")
   isPublic  Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -216,7 +210,6 @@ model AppSetting {
   @@map("app_settings")
 }
 
-// Enums
 enum Role {
   ADMIN
   USER

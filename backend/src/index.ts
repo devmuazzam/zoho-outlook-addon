@@ -22,6 +22,7 @@ import zohoCRMRoutes from './routes/zohoCRM';
 import zohoWebhookRoutes from './routes/zohoWebhooks';
 import zohoProfileRoutes from './routes/zohoProfiles';
 import zohoRoleRoutes from './routes/zohoRoles';
+import zohoDataSharingRoutes from './routes/zohoDataSharing';
 
 // Debug environment variables
 console.log('🔧 Environment Debug:');
@@ -49,6 +50,7 @@ app.use('/api/zoho', zohoApiRoutes);
 app.use('/api/zoho/crm', zohoCRMRoutes);
 app.use('/api/zoho/profiles', zohoProfileRoutes);
 app.use('/api/zoho/roles', zohoRoleRoutes);
+app.use('/api/zoho/data-sharing', zohoDataSharingRoutes);
 app.use('/webhooks/zoho', zohoWebhookRoutes);
 
 // Direct route for Zoho OAuth callback (since Zoho redirects to /auth/callback)

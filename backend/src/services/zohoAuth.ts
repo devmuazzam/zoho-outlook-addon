@@ -196,6 +196,11 @@ export class ZohoAuthService {
             this.triggerRoleSync(dbOrganization.id).catch((error: any) => {
               console.error('❌ Role sync failed:', error.message);
             });
+
+            // Trigger data sharing sync for administrators
+            this.triggerDataSharingSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ Data sharing sync failed:', error.message);
+            });
           } else {
             // Non-administrator: Only lookup existing organization
             console.log('👤 Non-administrator user - looking up existing organization');
@@ -595,6 +600,26 @@ export class ZohoAuthService {
       
     } catch (error: any) {
       console.error('❌ Failed to trigger role sync:', error.message);
+    }
+  }
+
+  /**
+   * Trigger data sharing sync for an organization (usually called admin login)
+   */
+  private async triggerDataSharingSync(organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 [DATA SHARING] Triggering data sharing sync for organization:', organizationId);
+      
+      // Import zohoDataSharingService here to avoid circular dependency
+      const { zohoDataSharingService } = await import('./zohoDataSharingService');
+      
+      // Trigger data sharing sync in background
+      zohoDataSharingService.triggerDataSharingSync(organizationId);
+      
+      console.log('🚀 [DATA SHARING] Data sharing sync triggered in background');
+      
+    } catch (error: any) {
+      console.error('❌ [DATA SHARING] Failed to trigger data sharing sync:', error.message);
     }
   }
 

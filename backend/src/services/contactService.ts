@@ -291,7 +291,7 @@ export class ContactService {
         }
       } catch (syncError) {
         console.warn('⚠️ Failed to mark contact as inactive in local DB:', syncError);
-      }
+      }   
     }
     
     return result;

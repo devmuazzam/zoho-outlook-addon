@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Box,
   Typography,
@@ -730,13 +731,6 @@ export default function OutlookPage() {
 
   const mainContent = (
     <Box sx={{ p: 2, maxWidth: 400, mx: 'auto' }}>
-      <Typography
-        variant="h6"
-        gutterBottom
-        sx={{ textAlign: 'center', color: 'primary.main' }}
-      >
-        Zoho CRM Integration
-      </Typography>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -760,116 +754,50 @@ export default function OutlookPage() {
         </Alert>
       )}
 
-      {/* Authentication Status */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Box
+      {/* Show login button when not authenticated */}
+      {!authStatus.authenticated && (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '200px',
+            textAlign: 'center',
+          }}
+        >
+          <Image
+            src="/icons/logo.png"
+            alt="Zoho for SMB/Dynamics Logo"
+            width={120}
+            height={120}
+            style={{
+              marginBottom: '24px',
+            }}
+          />
+          <Button
+            variant="contained"
+            size="large"
+            onClick={authenticateWithZoho}
+            disabled={isAuthenticating || isCheckingAuth}
+            startIcon={
+              isAuthenticating ? <CircularProgress size={20} /> : <Login />
+            }
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 1,
+              minWidth: '200px',
+              py: 1.5,
+              fontSize: '1.1rem',
+              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #1976D2 30%, #00BCD4 90%)',
+              },
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Security fontSize="small" />
-              <Typography variant="subtitle2">Authentication Status</Typography>
-            </Box>
-            <Button
-              size="small"
-              onClick={() => checkAuthStatus(false)}
-              disabled={isCheckingAuth}
-              startIcon={
-                isCheckingAuth ? <CircularProgress size={14} /> : <Refresh />
-              }
-            >
-              {isCheckingAuth ? 'Checking...' : 'Refresh'}
-            </Button>
-          </Box>
-
-          {authStatus.authenticated ? (
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <CheckCircle color="success" fontSize="small" />
-                <Typography variant="body2" color="success.main">
-                  Connected to Zoho CRM
-                </Typography>
-              </Box>
-              {authStatus.user && (
-                <Box sx={{ ml: 3, mb: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                    {authStatus.user.display_name || authStatus.user.full_name || 
-                     `${authStatus.user.first_name || ''} ${authStatus.user.last_name || ''}`.trim() || 
-                     'User'}
-                  </Typography>
-                  {authStatus.user.email && (
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      {authStatus.user.email}
-                    </Typography>
-                  )}
-                  {authStatus.user.zgid && (
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      ZGID: {authStatus.user.zgid}
-                    </Typography>
-                  )}
-                </Box>
-              )}
-              {redirectCountdown !== null && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="body2">
-                    🎉 Authentication successful! Redirecting to dashboard in {redirectCountdown} second{redirectCountdown !== 1 ? 's' : ''}...
-                  </Typography>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    sx={{ mt: 1 }}
-                    onClick={() => {
-                      setRedirectCountdown(null);
-                      router.push('/dashboard');
-                    }}
-                  >
-                    Go to Dashboard Now
-                  </Button>
-                </Alert>
-              )}
-            </Box>
-          ) : (
-            <Box>
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
-              >
-                <ErrorIcon color="warning" fontSize="small" />
-                <Typography variant="body2" color="warning.main">
-                  Not authenticated
-                </Typography>
-              </Box>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={authenticateWithZoho}
-                disabled={isAuthenticating || isCheckingAuth}
-                startIcon={
-                  isAuthenticating ? <CircularProgress size={16} /> : <Login />
-                }
-              >
-                {isAuthenticating ? 'Authenticating...' : 'Login with Zoho CRM'}
-              </Button>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-
-      {authStatus.authenticated && <></>}
-
-      <Box sx={{ mt: 2, textAlign: 'center' }}>
-        <Chip
-          label={`Zoho CRM v2 ${officeReady ? '• Office Ready' : '• Loading...'}`}
-          size="small"
-          variant="outlined"
-          color={officeReady ? 'success' : 'default'}
-          sx={{ fontSize: '0.7rem' }}
-        />
-      </Box>
+            {isAuthenticating ? 'Authenticating...' : 'Login with Zoho'}
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 

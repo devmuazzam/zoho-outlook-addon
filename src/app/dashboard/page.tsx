@@ -2,14 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Box,
   Typography,
   Card,
   CardContent,
   CircularProgress,
-  Alert,
   Button,
+  Chip,
+  Avatar,
+  Divider,
+  IconButton,
+  Alert,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -18,11 +23,8 @@ import {
   Business,
   Refresh,
   Launch,
-  AdminPanelSettings,
-  Sync,
   ToggleOn,
   ToggleOff,
-  Dashboard as DashboardIcon,
   Person,
 } from '@mui/icons-material';
 
@@ -48,7 +50,8 @@ export default function DashboardPage() {
 
   const checkAuthStatus = async () => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetch(`${backendUrl}/auth/zoho/status`, {
         method: 'GET',
         headers: {
@@ -130,18 +133,33 @@ export default function DashboardPage() {
     );
   }
 
-  const userName = authStatus.user?.display_name ||
-                   authStatus.user?.full_name ||
-                   `${authStatus.user?.first_name || ''} ${authStatus.user?.last_name || ''}`.trim() ||
-                   'User';
+  const userName =
+    authStatus.user?.display_name ||
+    authStatus.user?.full_name ||
+    `${authStatus.user?.first_name || ''} ${authStatus.user?.last_name || ''}`.trim() ||
+    'User';
 
   // Check if user is Administrator
   const roleName = authStatus.user?.profile?.name?.toLowerCase() || '';
-  const isAdmin = roleName.includes('admin') || roleName.includes('administrator') || roleName.includes('super') || roleName === 'owner';
-  
+  const isAdmin =
+    roleName.includes('admin') ||
+    roleName.includes('administrator') ||
+    roleName.includes('super') ||
+    roleName === 'owner';
+
   // Check if non-admin user has organization in database
   const hasOrganization = authStatus.dbUser?.organization !== null;
   const shouldShowContactAdmin = !isAdmin && !hasOrganization;
+
+  // Helper function to get user initials for avatar
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((word) => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <Box
@@ -165,11 +183,16 @@ export default function DashboardPage() {
       >
         <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
           <Box sx={{ textAlign: 'center', mb: { xs: 3, sm: 4 } }}>
-            <DashboardIcon
-              sx={{
-                fontSize: { xs: 48, sm: 56, md: 64 },
-                color: 'primary.main',
-                mb: { xs: 1.5, sm: 2 },
+            <Image
+              src="/icons/logo.png"
+              alt="Logo"
+              width={100}
+              height={250}
+              style={{
+                margin: '0 auto',
+                marginBottom: '16px',
+                display: 'block',
+                height: '250px !important',
               }}
             />
             <Typography
@@ -178,11 +201,11 @@ export default function DashboardPage() {
               sx={{
                 mb: 1,
                 fontWeight: 'bold',
-                color: 'primary.main',
+                color: 'black',
                 fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
               }}
             >
-              Welcome to Zoho CRM Dashboard
+              Zoho for <span style={{ color: 'red' }}>smb/dynamics</span>
             </Typography>
             <Typography
               variant="h5"
@@ -199,24 +222,26 @@ export default function DashboardPage() {
 
           {/* Show contact administrator message for non-admin users without organization */}
           {shouldShowContactAdmin && (
-            <Alert 
-              severity="warning" 
-              sx={{ 
-                mb: 3, 
+            <Alert
+              severity="warning"
+              sx={{
+                mb: 3,
                 textAlign: 'left',
                 '& .MuiAlert-message': {
-                  width: '100%'
-                }
+                  width: '100%',
+                },
               }}
             >
               <Typography variant="h6" gutterBottom>
                 Access Pending
               </Typography>
               <Typography variant="body2" paragraph>
-                Your account has been authenticated, but you need to wait for your organization administrator to complete the initial setup.
+                Your account has been authenticated, but you need to wait for
+                your organization administrator to complete the initial setup.
               </Typography>
               <Typography variant="body2">
-                Please contact your Zoho CRM administrator to complete the organization setup process.
+                Please contact your Zoho CRM administrator to complete the
+                organization setup process.
               </Typography>
             </Alert>
           )}
@@ -224,114 +249,246 @@ export default function DashboardPage() {
           {/* Only show user details and admin controls if user has access */}
           {!shouldShowContactAdmin && (
             <>
-              {/* User Information Card */}
-              <Card variant="outlined" sx={{ mb: 3, bgcolor: 'background.paper' }}>
-                <CardContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 } }}>
-                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-                    <Person color="primary" />
-                    User Information
-                  </Typography>
-                  <Box sx={{ mt: 2 }}>
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: { sm: 'space-between' }, mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: '80px' }, mb: { xs: 0.5, sm: 0 } }}>Name:</Typography>
-                      <Typography variant="body2" fontWeight="medium">{userName}</Typography>
+              {/* Compact User Information Card */}
+              <Card
+                variant="outlined"
+                sx={{
+                  mb: 3,
+                  bgcolor: 'background.paper',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Compact Header */}
+                <Box
+                  sx={{
+                    background:
+                      'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                    color: 'white',
+                    p: 2,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'white',
+                      width: 48,
+                      height: 48,
+                      fontSize: '1.1rem',
+                      fontWeight: 'bold',
+                      mx: 'auto',
+                      mb: 1,
+                    }}
+                  >
+                    {getUserInitials(userName)}
+                  </Avatar> 
+                </Box>
+
+                <CardContent sx={{ p: 2 }}>
+                  {/* Stacked User Details */}
+                  <Box
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                  >
+                    {/* Email */}
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.5,
+                          fontWeight: 'medium',
+                          mb: 0.5,
+                        }}
+                      >
+                        Email:
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: '0.9rem',
+                          lineHeight: 1.3,
+                          wordBreak: 'break-all',
+                          color: 'text.primary',
+                        }}
+                      >
+                        {authStatus.user?.email || 'N/A'}
+                      </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: { sm: 'space-between' }, mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: '80px' }, mb: { xs: 0.5, sm: 0 } }}>Email:</Typography>
-                      <Typography variant="body2" fontWeight="medium" sx={{ wordBreak: 'break-word' }}>{authStatus.user?.email || 'N/A'}</Typography>
+
+                    {/* Role */}
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.5,
+                          fontWeight: 'medium',
+                          mb: 0.5,
+                        }}
+                      >
+                        Role:
+                      </Typography>
+                      <Box>
+                        <Chip
+                          label={
+                            authStatus.dbUser?.role ||
+                            authStatus.user?.role?.name ||
+                            'User'
+                          }
+                          size="small"
+                          color={isAdmin ? 'error' : 'primary'}
+                          variant="outlined"
+                          sx={{
+                            fontWeight: 'medium',
+                            fontSize: '0.75rem',
+                            height: 24,
+                          }}
+                        />
+                      </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: { sm: 'space-between' }, mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: '80px' }, mb: { xs: 0.5, sm: 0 } }}>Role:</Typography>
-                      <Typography variant="body2" fontWeight="medium">{authStatus.dbUser?.role || authStatus.user?.role?.name || 'User'}</Typography>
+
+                    {/* Profile */}
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.5,
+                          fontWeight: 'medium',
+                          mb: 0.5,
+                        }}
+                      >
+                        Profile:
+                      </Typography>
+                      <Box>
+                        <Chip
+                          label={authStatus.user?.profile?.name || 'Standard'}
+                          size="small"
+                          color="secondary"
+                          variant="filled"
+                          sx={{
+                            fontWeight: 'medium',
+                            fontSize: '0.75rem',
+                            height: 24,
+                          }}
+                        />
+                      </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: { sm: 'space-between' }, mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: '80px' }, mb: { xs: 0.5, sm: 0 } }}>Profile:</Typography>
-                      <Typography variant="body2" fontWeight="medium">{authStatus.user?.profile?.name || 'Standard'}</Typography>
-                    </Box>
-                    {(authStatus.dbUser?.organization || authStatus.user?.organization) && (
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: { sm: 'space-between' } }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: '80px' }, mb: { xs: 0.5, sm: 0 } }}>Organization:</Typography>
-                        <Typography variant="body2" fontWeight="medium" sx={{ wordBreak: 'break-word' }}>
-                          {authStatus.dbUser?.organization?.name || authStatus.user?.organization}
+
+                    {/* Organization */}
+                    {(authStatus.dbUser?.organization ||
+                      authStatus.user?.organization) && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.5,
+                            fontWeight: 'medium',
+                            mb: 0.5,
+                          }}
+                        >
+                          Organization:
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          fontWeight="600"
+                          sx={{
+                            fontSize: '0.9rem',
+                            lineHeight: 1.3,
+                            wordBreak: 'break-word',
+                            color: 'success.main',
+                          }}
+                        >
+                          {authStatus.dbUser?.organization?.name ||
+                            authStatus.user?.organization}
                         </Typography>
                       </Box>
                     )}
                   </Box>
+
                 </CardContent>
               </Card>
 
-              {/* Status Information */}
-              <Card variant="outlined" sx={{ mb: 3, bgcolor: 'background.paper' }}>
-                <CardContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 } }}>
-                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-                    <CheckCircle color="success" />
-                    Connection Status
-                  </Typography>
-                  <Box sx={{ mt: 2 }}>
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: { sm: 'space-between' }, mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: '100px' }, mb: { xs: 0.5, sm: 0 } }}>CRM Status:</Typography>
-                      <Typography variant="body2" fontWeight="medium" color="success.main">Connected</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: { sm: 'space-between' }, mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: '100px' }, mb: { xs: 0.5, sm: 0 } }}>Token Expires:</Typography>
-                      <Typography variant="body2" fontWeight="medium">
-                        {authStatus.tokenInfo ? new Date(authStatus.tokenInfo.expiresAt).toLocaleDateString() : 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: { sm: 'space-between' } }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: '100px' }, mb: { xs: 0.5, sm: 0 } }}>Refresh Token:</Typography>
-                      <Typography variant="body2" fontWeight="medium" color={authStatus.tokenInfo?.hasRefreshToken ? 'success.main' : 'warning.main'}>
-                        {authStatus.tokenInfo?.hasRefreshToken ? 'Available' : 'Not Available'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Admin Controls - At the bottom */}
+              {/* Admin Controls */}
               {isAdmin && (
-                <Card variant="outlined" sx={{ mt: 3, bgcolor: 'background.paper', borderColor: 'primary.main', borderWidth: 2 }}>
-                  <CardContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 } }}>
-                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-                      <AdminPanelSettings />
+                <Card
+                  variant="outlined"
+                  sx={{
+                    mt: 3,
+                    bgcolor: 'background.paper',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Compact Header */}
+                  <Box
+                    sx={{
+                      background:
+                        'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                      color: 'white',
+                      p: 2,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        fontWeight: 'bold',
+                        fontSize: '1.1rem',
+                        lineHeight: 1.2,
+                      }}
+                    >
                       Administrator Controls
                     </Typography>
-                    <Box sx={{ mt: 2 }}>
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: { sm: 'space-between' }, gap: { xs: 2, sm: 0 } }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
-                          <Sync color="primary" />
-                          <Box>
-                            <Typography variant="body1" fontWeight="medium">Two-Way Sync</Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              Enable bidirectional synchronization between Outlook and Zoho CRM
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Button
-                          variant="contained"
-                          onClick={() => setTwoWaySyncEnabled(!twoWaySyncEnabled)}
-                          startIcon={twoWaySyncEnabled ? <ToggleOn /> : <ToggleOff />}
-                          color={twoWaySyncEnabled ? 'success' : 'primary'}
-                          size="large"
-                          sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
-                        >
-                          {twoWaySyncEnabled ? 'Enabled' : 'Disabled'}
-                        </Button>
-                      </Box>
-                      {twoWaySyncEnabled && (
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                          <Typography variant="body2">
-                            Two-way sync is now active. Changes in Outlook will sync to Zoho CRM and vice versa.
-                          </Typography>
-                        </Alert>
-                      )}
+                  </Box>
+
+                  <CardContent sx={{ p: 2 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 2,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.5,
+                          fontWeight: 'medium',
+                        }}
+                      >
+                        Two-Way Sync:
+                      </Typography>
+                      <IconButton
+                        onClick={() =>
+                          setTwoWaySyncEnabled(!twoWaySyncEnabled)
+                        }
+                        color={twoWaySyncEnabled ? 'primary' : 'success'}
+                        size="large"
+                      >
+                        {twoWaySyncEnabled ? <ToggleOn /> : <ToggleOff />}
+                      </IconButton>
                     </Box>
                   </CardContent>
                 </Card>
               )}
             </>
           )}
-
         </CardContent>
       </Card>
     </Box>

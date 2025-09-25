@@ -94,7 +94,8 @@ export const ZOHO_CONFIG: ZohoOAuthConfig = {
     'ZohoCRM.modules.deals.READ',
     'ZohoCRM.users.READ',
     'ZohoCRM.org.READ',
-    'ZohoCRM.settings.ALL'
+    'ZohoCRM.settings.ALL',
+    'ZohoCRM.modules.ALL'
   ].join(','),
   BASE_URL: 'https://accounts.zoho.com/oauth/v2',
   API_BASE_URL: 'https://www.zohoapis.com/crm/v2'

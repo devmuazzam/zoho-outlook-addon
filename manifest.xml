@@ -8,13 +8,13 @@
   <!-- Basic Add-in Information -->
   <Id>12345678-1234-1234-1234-123456789abc</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Zoho V2 Integration</ProviderName>
+  <ProviderName>Zoho for SMB/Dynamics</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   
   <!-- Add-in Display Information -->
-  <DisplayName DefaultValue="Zoho V2 CRM Integration" />
-  <Description DefaultValue="Integrate Outlook with Zoho CRM for seamless contact and lead management" />
-  <IconUrl DefaultValue="https://dummyimage.com/64x64.png" />
+  <DisplayName DefaultValue="Zoho for SMB/Dynamics" />
+  <Description DefaultValue="Integrate Outlook with Zoho for SMB/Dynamics for seamless contact and lead management" />
+  <IconUrl DefaultValue="https://adbd4ee0801f.ngrok-free.app/icons/compliant_icon.png" />
   <HighResolutionIconUrl DefaultValue="https://dummyimage.com/128x128.png" />
   <SupportUrl DefaultValue="https://adbd4ee0801f.ngrok-free.app/outlook-app" />
 
@@ -186,13 +186,13 @@
         <bt:Url id="Taskpane.Url" DefaultValue="https://adbd4ee0801f.ngrok-free.app/outlook-app"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GroupLabel" DefaultValue="Zoho V2 CRM"/>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Show Zoho CRM"/>
-        <bt:String id="ActionButton.Label" DefaultValue="Sync to Zoho"/>
+        <bt:String id="GroupLabel" DefaultValue="Zoho for SMB/Dynamics"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Show Zoho for SMB/Dynamics"/>
+        <bt:String id="ActionButton.Label" DefaultValue="Sync to Zoho for SMB/Dynamics"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Click to Show Zoho CRM Integration Panel"/>
-        <bt:String id="ActionButton.Tooltip" DefaultValue="Click to sync current email contact to Zoho CRM"/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Click to Show Zoho for SMB/Dynamics Integration Panel"/>
+        <bt:String id="ActionButton.Tooltip" DefaultValue="Click to sync current email contact to Zoho for SMB/Dynamics"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

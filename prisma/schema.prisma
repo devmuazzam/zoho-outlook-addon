@@ -37,6 +37,7 @@ model ZohoProfile {
   custom         Boolean                 @default(false)
   displayLabel   String
   permissions    ZohoProfilePermission[]
+  users          User[]                  // Users assigned to this profile
   organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("zoho_profiles")
@@ -81,6 +82,7 @@ model ZohoRole {
 
   // Relations
   organizationId String
+  users          User[]        // Users assigned to this role
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("zoho_roles")
@@ -109,12 +111,16 @@ model User {
   zohoUserId     String?        @unique
   organizationId String?
   role           Role           @default(USER)
+  zohoProfileId  String?        // Zoho CRM Profile ID assigned to user
+  zohoRoleId     String?        // Zoho CRM Role ID assigned to user
   isActive       Boolean        @default(true)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   contacts       Contact[]
   leads          Lead[]
   organization   Organization?  @relation(fields: [organizationId], references: [id])
+  zohoProfile    ZohoProfile?   @relation(fields: [zohoProfileId], references: [zohoProfileId])
+  zohoRole       ZohoRole?      @relation(fields: [zohoRoleId], references: [zohoRoleId])
   zohoTokens     ZohoAuthToken?
 
   @@map("users")

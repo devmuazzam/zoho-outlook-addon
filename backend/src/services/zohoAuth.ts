@@ -64,11 +64,6 @@ export class ZohoAuthService {
       // Store tokens in database
       await this.storeTokensInDatabase(tokens);
 
-      // Trigger initial contact sync (only once per auth session)
-      this.triggerInitialContactSync().catch((error: any) => {
-        console.error('❌ Initial contact sync failed:', error.message);
-      });
-
       return tokens;
     } catch (error: any) {
       console.error('❌ Token exchange failed:', error.response?.data || error.message);
@@ -200,6 +195,16 @@ export class ZohoAuthService {
             // Trigger data sharing sync for administrators
             this.triggerDataSharingSync(dbOrganization.id).catch((error: any) => {
               console.error('❌ Data sharing sync failed:', error.message);
+            });
+
+            // Trigger user sync for administrators
+            this.triggerUserSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ User sync failed:', error.message);
+            });
+
+            // Trigger contact sync for administrators (moved from general auth flow)
+            this.triggerContactSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ Contact sync failed:', error.message);
             });
           } else {
             // Non-administrator: Only lookup existing organization
@@ -624,61 +629,42 @@ export class ZohoAuthService {
   }
 
   /**
-   * Trigger initial contact sync after successful authentication (runs only once)
+   * Trigger user sync for an organization (usually called after admin login)
    */
-  private async triggerInitialContactSync(): Promise<void> {
+  private async triggerUserSync(organizationId: string): Promise<void> {
     try {
-      console.log('🔄 Triggering initial contact sync after OAuth login...');
+      console.log('🔄 [USER SYNC] Triggering user sync for organization:', organizationId);
       
-      // Check if we've already done an initial sync recently using app settings
-      const lastSyncSetting = await prisma.appSetting.findUnique({
-        where: { key: 'last_initial_contact_sync' }
-      });
+      // Import zohoUserSyncService here to avoid circular dependency
+      const { zohoUserSyncService } = await import('./zohoUserSyncService');
+      
+      // Trigger user sync in background
+      zohoUserSyncService.triggerUserSync(organizationId);
+      
+      console.log('🚀 [USER SYNC] User sync triggered in background');
+      
+    } catch (error: any) {
+      console.error('❌ [USER SYNC] Failed to trigger user sync:', error.message);
+    }
+  }
 
-      // If we already have a sync within the last 24 hours, skip
-      if (lastSyncSetting) {
-        const lastSyncTime = new Date(lastSyncSetting.value);
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        
-        if (lastSyncTime > oneDayAgo) {
-          console.log('⏭️ Skipping initial sync - already completed within 24 hours');
-          return;
-        }
-      }
-
+  /**
+   * Trigger contact sync for an organization (usually called after admin login)
+   */
+  private async triggerContactSync(organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 [CONTACT SYNC] Triggering contact sync for organization:', organizationId);
+      
       // Import zohoSyncService here to avoid circular dependency
       const { zohoSyncService } = await import('./zohoSyncService');
       
-      // Update the sync timestamp before starting
-      await prisma.appSetting.upsert({
-        where: { key: 'last_initial_contact_sync' },
-        update: { 
-          value: new Date().toISOString(),
-          updatedAt: new Date()
-        },
-        create: { 
-          key: 'last_initial_contact_sync',
-          value: new Date().toISOString(),
-          category: 'sync'
-        }
-      });
-
-      // Run the contact sync in background (don't await to avoid blocking auth)
-      zohoSyncService.syncContactsFromZoho()
-        .then(result => {
-          console.log(`✅ Initial contact sync completed: ${result.synced} contacts synced across ${result.pages} pages`);
-          if (result.errors.length > 0) {
-            console.warn(`⚠️ ${result.errors.length} errors during initial sync`);
-          }
-        })
-        .catch(error => {
-          console.error('❌ Background contact sync failed:', error.message);
-        });
-
-      console.log('🚀 Initial contact sync started in background');
+      // Trigger contact sync in background
+      zohoSyncService.triggerContactSync(organizationId);
+      
+      console.log('🚀 [CONTACT SYNC] Contact sync triggered in background');
       
     } catch (error: any) {
-      console.error('❌ Failed to trigger initial contact sync:', error.message);
+      console.error('❌ [CONTACT SYNC] Failed to trigger contact sync:', error.message);
     }
   }
 }

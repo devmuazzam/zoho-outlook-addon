@@ -137,36 +137,83 @@ export class ContactService {
   }
 
   /**
-   * Sync contact from Zoho CRM
+   * Sync contact from Zoho CRM with organization and owner mapping
    */
-  async syncFromZoho(zohoContact: any): Promise<Contact> {
-    const contactData: Prisma.ContactCreateInput | Prisma.ContactUpdateInput = {
-      zohoId: zohoContact.id,
-      firstName: zohoContact.First_Name || null,
-      lastName: zohoContact.Last_Name || null,
-      email: zohoContact.Email || null,
-      phone: zohoContact.Phone || null,
-      mobile: zohoContact.Mobile || null,
-      company: zohoContact.Account_Name || zohoContact.Company || null,
-      title: zohoContact.Title || null,
-      department: zohoContact.Department || null,
-      leadSource: zohoContact.Lead_Source || null,
-      description: zohoContact.Description || null,
-      mailingStreet: zohoContact.Mailing_Street || null,
-      mailingCity: zohoContact.Mailing_City || null,
-      mailingState: zohoContact.Mailing_State || null,
-      mailingZip: zohoContact.Mailing_Zip || null,
-      mailingCountry: zohoContact.Mailing_Country || null,
-      syncedAt: new Date(),
-    };
+  async syncFromZoho(zohoContact: any, organizationId?: string): Promise<Contact> {
+    try {
+      console.log(`🔄 Syncing contact ${zohoContact.id} from Zoho CRM...`);
 
-    // Check if contact exists
-    const existingContact = await this.getContactByZohoId(zohoContact.id);
+      // Find the contact owner in our local database using Zoho user ID
+      let userId: string | undefined = undefined;
+      if (zohoContact.Owner?.id) {
+        const owner = await this.db.user.findUnique({
+          where: { zohoUserId: zohoContact.Owner.id }
+        });
+        if (owner) {
+          userId = owner.id;
+          console.log(`✅ Contact owner mapped: ${zohoContact.Owner.name} -> ${owner.name} (${owner.id})`);
+        } else {
+          console.warn(`⚠️ Contact owner not found in local database: ${zohoContact.Owner.name} (${zohoContact.Owner.id})`);
+        }
+      }
 
-    if (existingContact) {
-      return this.updateContactByZohoId(zohoContact.id, contactData);
-    } else {
-      return this.createContact(contactData as Prisma.ContactCreateInput);
+      const contactData: Prisma.ContactCreateInput = {
+        zohoId: zohoContact.id,
+        firstName: zohoContact.First_Name || null,
+        lastName: zohoContact.Last_Name || null,
+        email: zohoContact.Email || null,
+        phone: zohoContact.Phone || null,
+        mobile: zohoContact.Mobile || null,
+        company: zohoContact.Account_Name || zohoContact.Company || null,
+        title: zohoContact.Title || null,
+        department: zohoContact.Department || null,
+        leadSource: zohoContact.Lead_Source || null,
+        description: zohoContact.Description || null,
+        mailingStreet: zohoContact.Mailing_Street || null,
+        mailingCity: zohoContact.Maling_City || null,
+        mailingState: zohoContact.Mailing_State || null,
+        mailingZip: zohoContact.Mailing_Zip || null,
+        mailingCountry: zohoContact.Mailing_Country || null,
+        syncedAt: new Date(),
+        // Link to organization if provided
+        ...(organizationId && { organizationId }),
+        // Link to user/owner if found
+        ...(userId && { userId })
+      };
+
+      // Check if contact exists
+      const existingContact = await this.getContactByZohoId(zohoContact.id);
+
+      if (existingContact) {
+        // Update existing contact
+        console.log(`📝 Updating existing contact: ${zohoContact.id}`);
+        return this.db.contact.update({
+          where: { zohoId: zohoContact.id },
+          data: {
+            ...contactData,
+            updatedAt: new Date(),
+          },
+          include: {
+            user: true,
+            organization: true,
+            activities: true,
+          },
+        });
+      } else {
+        // Create new contact
+        console.log(`➕ Creating new contact: ${zohoContact.id}`);
+        return this.db.contact.create({
+          data: contactData,
+          include: {
+            user: true,
+            organization: true,
+            activities: true,
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error(`❌ Failed to sync contact ${zohoContact.id}:`, error.message);
+      throw new Error(`Contact sync failed: ${error.message}`);
     }
   }
 

@@ -6,12 +6,12 @@ export class ZohoSyncService {
   /**
    * Sync all contacts from Zoho CRM to local database with pagination
    */
-  async syncContactsFromZoho(): Promise<{
+  async syncContactsFromZoho(organizationId?: string): Promise<{
     synced: number;
     errors: string[];
     pages: number;
   }> {
-    console.log('🚀 Starting contact sync from Zoho CRM...');
+    console.log('🚀 Starting contact sync from Zoho CRM...', organizationId ? `for organization: ${organizationId}` : '');
     
     let totalSynced = 0;
     let totalErrors: string[] = [];
@@ -35,7 +35,7 @@ export class ZohoSyncService {
         // Sync each contact
         for (const zohoContact of contacts) {
           try {
-            await contactService.syncFromZoho(zohoContact);
+            await contactService.syncFromZoho(zohoContact, organizationId);
             totalSynced++;
           } catch (error: any) {
             totalErrors.push(`Contact ${zohoContact.id}: ${error.message}`);

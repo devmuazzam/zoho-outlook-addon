@@ -19,6 +19,7 @@ model Organization {
   profiles ZohoProfile[]
   roles ZohoRole[]
   dataSharingRules ZohoDataSharingRule[]
+  contacts Contact[]
 
   @@map("organizations")
 }
@@ -164,8 +165,10 @@ model Contact {
   updatedAt      DateTime          @updatedAt
   syncedAt       DateTime          @default(now())
   userId         String?
+  organizationId String?
   activities     ContactActivity[]
   user           User?             @relation(fields: [userId], references: [id])
+  organization   Organization?     @relation(fields: [organizationId], references: [id])
 
   @@map("contacts")
 }

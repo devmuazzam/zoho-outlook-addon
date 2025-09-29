@@ -101,6 +101,7 @@ export class ZohoAuthService {
         name: zohoUser.full_name,
         email: zohoUser.email,
         profile: zohoUser.profile?.name,
+        role: zohoUser.role?.name,
         isAdministrator
       });
       console.log('✅ Zoho user authenticated:', zohoUser);
@@ -114,12 +115,16 @@ export class ZohoAuthService {
           name: zohoUser.full_name,
           zohoUserId: zohoUser.id,
           role: userRole,
+          zohoProfileId: zohoUser.profile?.id || null,
+          zohoRoleId: zohoUser.role?.id || null,
           updatedAt: new Date()
         },
         create: {
           email: zohoUser.email,
           name: zohoUser.full_name,
           zohoUserId: zohoUser.id,
+          zohoProfileId: zohoUser.profile?.id || null,
+          zohoRoleId: zohoUser.role?.id || null,
           role: userRole
         }
       });

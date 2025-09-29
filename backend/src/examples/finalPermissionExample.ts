@@ -23,7 +23,7 @@ async function demonstrateSimplifiedService() {
   try {
     const result = await zohoPermissionService.checkModulePermissions({
       moduleName: 'Contacts',
-      recordId: 'contact-123'
+      recordId: 'cmg55axhr00heav1k76gmtv1i'
     });
     
     console.log('✅ Success! Users who can access this contact:');
@@ -37,26 +37,26 @@ async function demonstrateSimplifiedService() {
     console.log(`❌ Error: ${error.message}\n`);
   }
 
-  // Example 2: Using Zoho contact ID
-  console.log('Example 2: Check permissions with Zoho contact ID');
-  console.log('-----------------------------------------------');
+  // // Example 2: Using Zoho contact ID
+  // console.log('Example 2: Check permissions with Zoho contact ID');
+  // console.log('-----------------------------------------------');
   
-  try {
-    const result = await zohoPermissionService.checkModulePermissions({
-      moduleName: 'Contacts',
-      recordId: 'zoho-contact-456'
-    });
+  // try {
+  //   const result = await zohoPermissionService.checkModulePermissions({
+  //     moduleName: 'Contacts',
+  //     recordId: 'zoho-contact-456'
+  //   });
     
-    console.log('✅ Success! Users who can access this contact:');
-    result.userIds.forEach((userId, index) => {
-      console.log(`   ${index + 1}. ${userId}`);
-    });
-    console.log(`   Access Type: ${result.accessType}`);
-    console.log(`   Used Hierarchy: ${result.hierarchyUsed}\n`);
+  //   console.log('✅ Success! Users who can access this contact:');
+  //   result.userIds.forEach((userId, index) => {
+  //     console.log(`   ${index + 1}. ${userId}`);
+  //   });
+  //   console.log(`   Access Type: ${result.accessType}`);
+  //   console.log(`   Used Hierarchy: ${result.hierarchyUsed}\n`);
     
-  } catch (error: any) {
-    console.log(`❌ Error: ${error.message}\n`);
-  }
+  // } catch (error: any) {
+  //   console.log(`❌ Error: ${error.message}\n`);
+  // }
 }
 
 function printAPIDocumentation() {
@@ -137,8 +137,8 @@ curl -X POST http://localhost:3001/api/zoho/permissions/check \\
 if (require.main === module) {
   demonstrateSimplifiedService()
     .then(() => {
-      printAPIDocumentation();
-      printIntegrationExample();
+      // printAPIDocumentation();
+      // printIntegrationExample();
     })
     .catch(console.error);
 }

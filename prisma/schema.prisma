@@ -8,18 +8,18 @@ datasource db {
 }
 
 model Organization {
-  id        String        @id @default(cuid())
-  zohoOrgId String        @unique
-  name      String?
-  domain    String?
-  isActive  Boolean       @default(true)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  users User[]
-  profiles ZohoProfile[]
-  roles ZohoRole[]
+  id               String                @id @default(cuid())
+  zohoOrgId        String                @unique
+  name             String?
+  domain           String?
+  isActive         Boolean               @default(true)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  contacts         Contact[]
+  users            User[]
   dataSharingRules ZohoDataSharingRule[]
-  contacts Contact[]
+  profiles         ZohoProfile[]
+  roles            ZohoRole[]
 
   @@map("organizations")
 }
@@ -37,8 +37,8 @@ model ZohoProfile {
   organizationId String
   custom         Boolean                 @default(false)
   displayLabel   String
+  users          User[]
   permissions    ZohoProfilePermission[]
-  users          User[]                  // Users assigned to this profile
   organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("zoho_profiles")
@@ -57,54 +57,47 @@ model ZohoProfilePermission {
   profile      ZohoProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, zohoPermId])
-    @@map("zoho_profile_permissions")
+  @@map("zoho_profile_permissions")
 }
 
-// Zoho CRM Roles
 model ZohoRole {
-  id               String    @id @default(cuid())
-  zohoRoleId       String    @unique // Zoho CRM role ID
-  name             String    // Role name
-  displayLabel     String    // Display label from API
-  description      String?   // Role description
-  shareWithPeers   Boolean   @default(false) // share_with_peers from API
-  forecastManager  String?   // forecast_manager from API
-  reportingToId    String?   // reporting_to.id from API
-  reportingToName  String?   // reporting_to.name from API
-  createdById      String?   // created_by__s.id from API
-  createdByName    String?   // created_by__s.name from API
-  modifiedById     String?   // modified_by__s.id from API
-  modifiedByName   String?   // modified_by__s.name from API
-  createdTime      DateTime? // From Zoho API (can be null)
-  modifiedTime     DateTime? // From Zoho API (can be null)
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  // Relations
-  organizationId String
-  users          User[]        // Users assigned to this role
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id              String       @id @default(cuid())
+  zohoRoleId      String       @unique
+  name            String
+  displayLabel    String
+  description     String?
+  shareWithPeers  Boolean      @default(false)
+  forecastManager String?
+  reportingToId   String?
+  reportingToName String?
+  createdById     String?
+  createdByName   String?
+  modifiedById    String?
+  modifiedByName  String?
+  createdTime     DateTime?
+  modifiedTime    DateTime?
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organizationId  String
+  users           User[]
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("zoho_roles")
 }
 
-// Zoho CRM Data Sharing Rules
 model ZohoDataSharingRule {
-  id         String   @id @default(cuid())
-  ruleData   Json     // Store the entire rule data as JSON
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
+  id             String       @id @default(cuid())
+  ruleData       Json
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("zoho_data_sharing_rules")
 }
 
-// User management
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -112,8 +105,8 @@ model User {
   zohoUserId     String?        @unique
   organizationId String?
   role           Role           @default(USER)
-  zohoProfileId  String?        // Zoho CRM Profile ID assigned to user
-  zohoRoleId     String?        // Zoho CRM Role ID assigned to user
+  zohoProfileId  String?
+  zohoRoleId     String?
   isActive       Boolean        @default(true)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -167,8 +160,8 @@ model Contact {
   userId         String?
   organizationId String?
   activities     ContactActivity[]
-  user           User?             @relation(fields: [userId], references: [id])
   organization   Organization?     @relation(fields: [organizationId], references: [id])
+  user           User?             @relation(fields: [userId], references: [id])
 
   @@map("contacts")
 }

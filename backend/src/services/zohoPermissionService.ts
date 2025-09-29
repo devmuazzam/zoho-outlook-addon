@@ -269,7 +269,7 @@ export class ZohoPermissionService {
     // Find rule for the specific module
     const moduleRule = rules.find(rule => {
       const ruleData = rule.ruleData as any;
-      return ruleData?.module?.api_name === moduleName;
+      return ruleData?.module === moduleName;
     });
     
     return moduleRule;

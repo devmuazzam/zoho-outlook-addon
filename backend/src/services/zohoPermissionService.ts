@@ -445,7 +445,7 @@ export class ZohoPermissionService {
     const accessibleRoleIds: string[] = [];
     
     for (const [roleId, roleInfo] of Array.from(roleHierarchy.entries())) {
-      if (roleInfo.level >= baseRole.level) {  // Changed from <= to >= 
+      if (roleInfo.level <= baseRole.level) {
         accessibleRoleIds.push(roleId);
       }
     }

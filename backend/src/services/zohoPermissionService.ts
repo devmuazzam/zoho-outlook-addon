@@ -95,7 +95,7 @@ export class ZohoPermissionService {
   }
   
   /**
-   * Handle private access - only owner and users in higher role hierarchy can access
+   * Handle private access - only owner and users in same or lower role hierarchy can access
    */
   private async handlePrivateAccess(
     organizationId: string, 
@@ -146,7 +146,7 @@ export class ZohoPermissionService {
       };
     }
     
-    // Step 4: Build role hierarchy and get all users in higher hierarchy
+    // Step 4: Build role hierarchy and get all users in same or lower hierarchy
     const roleHierarchy = await this.buildRoleHierarchy(organizationId);
     const accessibleUserIds = await this.getUsersInRoleHierarchy(
       organizationId, 
@@ -424,7 +424,8 @@ export class ZohoPermissionService {
   }
   
   /**
-   * Get all users in role hierarchy who are at the same level or higher than the given role
+   * Get all users in role hierarchy who are at the same level or lower than the given role
+   * For private modules, only the record owner and their subordinates should have access
    */
   private async getUsersInRoleHierarchy(
     organizationId: string,
@@ -439,11 +440,12 @@ export class ZohoPermissionService {
     
     const accessibleUserIds: string[] = [];
     
-    // Get all roles at the same level or higher (lower level number)
+    // Get all roles at the same level or lower (same or higher level number)
+    // This includes the owner's role and all subordinate roles
     const accessibleRoleIds: string[] = [];
     
     for (const [roleId, roleInfo] of Array.from(roleHierarchy.entries())) {
-      if (roleInfo.level <= baseRole.level) {
+      if (roleInfo.level >= baseRole.level) {  // Changed from <= to >= 
         accessibleRoleIds.push(roleId);
       }
     }

@@ -1,5 +1,6 @@
 import express, { Router } from 'express';
 import { sendSuccess, sendError, validateRequired } from '../utils/response';
+import { webhookRouter } from './webhooks';
 
 const router: Router = express.Router();
 
@@ -116,5 +117,8 @@ router.get('/health', (req, res) => {
     version: '2.0.0'
   }, 'API routes are healthy');
 });
+
+// Mount webhook routes
+router.use('/webhooks', webhookRouter);
 
 export default router;

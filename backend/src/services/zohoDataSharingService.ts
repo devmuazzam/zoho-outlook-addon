@@ -64,8 +64,6 @@ export class ZohoDataSharingService {
   }> {
     try {
       console.log('🔄 Starting data sharing rules sync to database...');
-      
-      // First, clear existing rules for this organization
       await prisma.zohoDataSharingRule.deleteMany({
         where: { organizationId }
       });
@@ -116,12 +114,10 @@ export class ZohoDataSharingService {
         publicInPortals: zohoRule.public_in_portals,
         ruleComputationRunning: zohoRule.rule_computation_running
       });
-
-      // Store the entire rule as JSON
       const dbRule = await prisma.zohoDataSharingRule.create({
         data: {
           organizationId: organizationId,
-          ruleData: zohoRule as any, // Store the entire rule object as JSON
+          ruleData: zohoRule as any,
         }
       });
 
@@ -162,7 +158,6 @@ export class ZohoDataSharingService {
    */
   async getDataSharingRuleByModuleId(organizationId: string, moduleId: string): Promise<any | null> {
     try {
-      // Since we're storing JSON, we need to search within the JSON data
       const rules = await prisma.zohoDataSharingRule.findMany({
         where: { 
           organizationId,
@@ -173,7 +168,6 @@ export class ZohoDataSharingService {
         }
       });
 
-      // Filter in memory to find the rule with matching module ID
       const rule = rules.find(rule => 
         (rule.ruleData as any)?.module?.id === moduleId
       );
@@ -201,7 +195,6 @@ export class ZohoDataSharingService {
         }
       });
 
-      // Filter in memory to find rules with matching share type
       const filteredRules = rules.filter(rule => 
         (rule.ruleData as any)?.share_type === shareType
       );
@@ -271,5 +264,4 @@ export class ZohoDataSharingService {
   }
 }
 
-// Export singleton instance
 export const zohoDataSharingService = new ZohoDataSharingService();

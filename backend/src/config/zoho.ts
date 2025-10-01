@@ -1,4 +1,3 @@
-// Zoho CRM OAuth configuration and types
 export interface ZohoOAuthConfig {
   CLIENT_ID: string;
   CLIENT_SECRET: string;
@@ -89,9 +88,6 @@ export const ZOHO_CONFIG: ZohoOAuthConfig = {
   SCOPES: [
     'ZohoCRM.modules.contacts.READ',
     'ZohoCRM.modules.contacts.WRITE',
-    'ZohoCRM.modules.leads.READ',
-    'ZohoCRM.modules.leads.WRITE',
-    'ZohoCRM.modules.deals.READ',
     'ZohoCRM.users.READ',
     'ZohoCRM.org.READ',
     'ZohoCRM.settings.ALL',

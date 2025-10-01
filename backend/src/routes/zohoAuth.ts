@@ -11,7 +11,6 @@ const router: Router = express.Router();
  */
 router.get('/login', (req: Request, res: Response) => {
   try {
-    // Validate required environment variables
     const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = ZOHO_CONFIG;
     
     console.log('🔄 Checking Zoho OAuth credentials...');
@@ -91,18 +90,16 @@ router.get('/status', async (req: Request, res: Response) => {
     let dbUser = null;
     if (authStatus.authenticated) {
       try {
-        // Get user with organization details from database
         dbUser = await zohoAuthService.getCurrentUserWithOrganization();
       } catch (dbError: any) {
         console.warn('⚠️ Failed to get database user info:', dbError.message);
-        // Continue with Zoho user info if DB lookup fails
       }
     }
     
     sendSuccess(res, {
       authenticated: authStatus.authenticated,
-      user: authStatus.user, // Zoho user info
-      dbUser: dbUser, // Database user info with organization
+      user: authStatus.user,
+      dbUser: dbUser,
       message: authStatus.message,
       authUrl: authStatus.authUrl,
       tokenInfo: authStatus.tokens ? {

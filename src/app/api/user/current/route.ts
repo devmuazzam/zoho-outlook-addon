@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-// import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export async function GET() {
   try {
-    // For now, we'll use a mock user. In a real app, you'd get this from session
-    // const session = await getServerSession(authOptions);
-    // if (!session?.user?.email) {
-    //   return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    // }
-
-    // Mock user data - replace with actual session-based user lookup
     const mockUser = {
       id: 'cmg55avr300ghav1kl1fe2ub3',
       name: 'dev 0',

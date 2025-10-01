@@ -158,7 +158,6 @@ export default function PermissionTestPage() {
       )}
 
       <Grid container spacing={3}>
-        {/* Current User Information */}
         <Grid size={{ xs: 12, lg: 6 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: 3 }}>
@@ -259,7 +258,6 @@ export default function PermissionTestPage() {
           </Card>
         </Grid>
 
-        {/* Permission Test */}
         <Grid size={{ xs: 12, lg: 6 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: 3 }}>
@@ -368,57 +366,6 @@ export default function PermissionTestPage() {
           </Card>
         </Grid>
       </Grid>
-
-      {/* How it Works */}
-      {/* <Card sx={{ mt: 3 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="h5" component="h2" gutterBottom>
-            How the Permission Service Works
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6, lg: 3 }}>
-              <Box>
-                <Typography variant="subtitle2" color="primary" sx={{ mb: 1 }}>
-                  1. Record Lookup
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Finds the contact record and identifies the owner
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6, lg: 3 }}>
-              <Box>
-                <Typography variant="subtitle2" color="success.main" sx={{ mb: 1 }}>
-                  2. Sharing Rules
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Checks organization default sharing rules (private/public)
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6, lg: 3 }}>
-              <Box>
-                <Typography variant="subtitle2" color="warning.main" sx={{ mb: 1 }}>
-                  3. Profile Permissions
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Verifies user profile permissions for the module
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6, lg: 3 }}>
-              <Box>
-                <Typography variant="subtitle2" color="info.main" sx={{ mb: 1 }}>
-                  4. Role Hierarchy
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Applies role hierarchy for private access control
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card> */}
     </Container>
   );
 }

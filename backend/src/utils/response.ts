@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { ApiResponse, ErrorResponse } from '../types';
 
-// Success response helper
 export const sendSuccess = <T>(
   res: Response, 
   data: T, 
@@ -18,7 +17,6 @@ export const sendSuccess = <T>(
   return res.status(statusCode).json(response);
 };
 
-// Error response helper
 export const sendError = (
   res: Response, 
   error: string, 
@@ -35,7 +33,6 @@ export const sendError = (
   return res.status(statusCode).json(response);
 };
 
-// Validation helper
 export const validateRequired = (fields: Record<string, any>): string[] => {
   const missing: string[] = [];
   

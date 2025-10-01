@@ -45,7 +45,6 @@ function AuthSuccessContent() {
   const message = searchParams.get('message');
 
   useEffect(() => {
-    // Check authentication status
     checkAuthStatus();
   }, []);
 
@@ -107,7 +106,6 @@ function AuthSuccessContent() {
         Zoho CRM Authentication
       </Typography>
 
-      {/* Authentication Result */}
       {authResult === 'success' && (
         <Alert severity="success" sx={{ mb: 3 }} icon={<CheckCircle />}>
           <Typography variant="h6" gutterBottom>
@@ -130,7 +128,6 @@ function AuthSuccessContent() {
         </Alert>
       )}
 
-      {/* Loading State */}
       {loading && (
         <Card sx={{ mb: 3 }}>
           <CardContent sx={{ textAlign: 'center' }}>
@@ -141,7 +138,6 @@ function AuthSuccessContent() {
         </Card>
       )}
 
-      {/* Authentication Status */}
       {!loading && authStatus && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -205,14 +201,12 @@ function AuthSuccessContent() {
         </Card>
       )}
 
-      {/* Error State */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="body2">{error}</Typography>
         </Alert>
       )}
 
-      {/* Action Buttons */}
       <Stack spacing={2}>
         {authStatus?.authenticated && (
           <Button
@@ -247,7 +241,6 @@ function AuthSuccessContent() {
         </Button>
       </Stack>
 
-      {/* Next Steps */}
       {authStatus?.authenticated && (
         <Card sx={{ mt: 3 }}>
           <CardContent>

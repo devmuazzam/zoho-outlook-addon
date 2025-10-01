@@ -32,7 +32,6 @@ export class ZohoProfileService {
       
       const accessToken = await zohoAuthService.getValidAccessToken();
       
-      // First, get the basic profiles list
       const response = await axios.get(
         `${ZOHO_CONFIG.API_BASE_URL}/settings/profiles`,
         {
@@ -51,14 +50,12 @@ export class ZohoProfileService {
       console.log('🔍 Sample profile data:', JSON.stringify(response.data));
       console.log('🔍 Sample profile data:', JSON.stringify(response.data.profiles[0], null, 2));
       
-      // Now fetch detailed permissions for each profile
       const profilesWithPermissions = await Promise.all(
         response.data.profiles.map(async (profile: any) => {
           try {
             const profileId = profile.id || profile.name?.toLowerCase().replace(/\s+/g, '_');
             console.log(`🔄 Fetching permissions for profile: ${profile.display_label} (ID: ${profileId})`);
             
-            // Try to get permissions for this specific profile
             const permissionsResponse = await axios.get(
               `${ZOHO_CONFIG.API_BASE_URL}/settings/profiles/${profileId}`,
               {
@@ -144,10 +141,7 @@ export class ZohoProfileService {
    */
   private async syncSingleProfile(zohoProfile: ZohoProfile, organizationId: string): Promise<void> {
     try {
-      // Generate a unique ID for the profile if not provided
       const profileId = zohoProfile.id || `profile_${zohoProfile.display_label.toLowerCase().replace(/\s+/g, '_')}`;
-      
-      // Prepare the profile data
       const profileData = {
         zohoProfileId: profileId,
         name: zohoProfile.name || zohoProfile.display_label,
@@ -157,7 +151,6 @@ export class ZohoProfileService {
         organizationId: organizationId
       };
 
-      // Add optional timestamp fields if they exist
       const createData = {
         ...profileData,
         ...(zohoProfile.created_time && { createdTime: new Date(zohoProfile.created_time) }),
@@ -174,14 +167,12 @@ export class ZohoProfileService {
         updatedAt: new Date()
       };
 
-      // Create or update the profile
       const dbProfile = await prisma.zohoProfile.upsert({
         where: { zohoProfileId: profileId },
         update: updateData,
         create: createData
       });
 
-      // Sync permissions for this profile
       console.log(`🔍 Checking permissions for profile ${zohoProfile.display_label}:`, {
         hasPermissions: !!zohoProfile.permissions_details,
         permissionCount: zohoProfile.permissions_details?.length || 0,
@@ -206,13 +197,10 @@ export class ZohoProfileService {
    */
   private async syncProfilePermissions(profileId: string, permissions: ZohoProfilePermission[]): Promise<void> {
     try {
-      // Delete existing permissions for this profile
       await prisma.zohoProfilePermission.deleteMany({
         where: { profileId }
       });
 
-
-      // Ensure all permissions have a module value
       const missingModule = permissions.filter(p => !p.module);
       if (missingModule.length > 0) {
         console.warn('Some permissions are missing module. Example:', missingModule[0]);
@@ -231,7 +219,7 @@ export class ZohoProfileService {
         try {
           await prisma.zohoProfilePermission.createMany({
             data: permissionData,
-            skipDuplicates: true // Skip any duplicates instead of failing
+            skipDuplicates: true
           });
           console.log(`✅ Successfully inserted permissions for profile ${profileId}`);
         } catch (insertError: any) {
@@ -302,7 +290,6 @@ export class ZohoProfileService {
         }
       }
 
-      // Update the sync timestamp before starting
       await prisma.appSetting.upsert({
         where: { key: `last_profile_sync_${organizationId}` },
         update: { 
@@ -316,7 +303,6 @@ export class ZohoProfileService {
         }
       });
 
-      // Run the profile sync in background
       this.syncProfilesToDatabase(organizationId)
         .then(result => {
           console.log(`✅ Profile sync completed: ${result.synced} profiles synced`);
@@ -336,5 +322,4 @@ export class ZohoProfileService {
   }
 }
 
-// Export singleton instance
 export const zohoProfileService = new ZohoProfileService();

@@ -6,7 +6,6 @@ import { sendSuccess, sendError } from '../utils/response';
 
 const router: Router = express.Router();
 
-// Middleware to check authentication
 const requireAuth = (req: Request, res: Response, next: any) => {
   if (!zohoAuthService.isAuthenticated()) {
     return sendError(res, 'Authentication required', 401, 'Please authenticate with Zoho CRM first');
@@ -14,7 +13,6 @@ const requireAuth = (req: Request, res: Response, next: any) => {
   next();
 };
 
-// Get current user information
 router.get('/user', requireAuth, async (req: Request, res: Response) => {
   try {
     console.log('🔄 Fetching current user info...');
@@ -33,12 +31,10 @@ router.get('/user', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// Search records by criteria
 router.get('/search', requireAuth, async (req: Request, res: Response) => {
   try {
     const { module, criteria, page = 1, per_page = 10 } = req.query;
     
-    // Validate required parameters
     if (!module || !criteria) {
       return sendError(res, 'Missing required parameters', 400, 'module and criteria are required');
     }

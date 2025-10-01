@@ -14,7 +14,6 @@ const router: Router = express.Router();
  */
 router.get('/user', async (req: Request, res: Response) => {
   try {
-    // Proxy to the CRM user endpoint
     const userResponse = await zohoCRMService.getCurrentUser();
     
     if (!userResponse.success) {
@@ -33,7 +32,6 @@ router.get('/user', async (req: Request, res: Response) => {
 
 /**
  * GET /api/contacts
- * Get contacts with database fallback
  */
 router.get('/contacts', async (req: Request, res: Response) => {
   try {
@@ -41,7 +39,6 @@ router.get('/contacts', async (req: Request, res: Response) => {
     const perPage = parseInt(req.query.per_page as string) || 50;
     const search = req.query.search as string;
 
-    // If search is provided, search in database
     if (search) {
       const result = await contactService.getContacts({
         skip: (page - 1) * perPage,
@@ -60,7 +57,6 @@ router.get('/contacts', async (req: Request, res: Response) => {
       }, 'Contacts retrieved from database');
     }
 
-    // Otherwise, try to get from Zoho with database fallback
     const contactsResponse = await contactService.getContactsFromZoho(page, perPage);
     const contacts = contactsResponse.success ? contactsResponse.data?.data || [] : [];
 
@@ -191,8 +187,6 @@ router.delete('/contacts/:id', async (req: Request, res: Response) => {
 router.post('/sync/contacts', async (req: Request, res: Response) => {
   try {
     console.log('🔄 Starting contact sync from Zoho CRM...');
-
-    // For now, return a placeholder response since sync logic should be handled differently
     const result = { synced: 0, errors: ['Sync functionality needs to be implemented'] };
 
     sendSuccess(res, {
@@ -251,7 +245,6 @@ router.get('/leads', async (req: Request, res: Response) => {
     const perPage = parseInt(req.query.per_page as string) || 50;
     const search = req.query.search as string;
 
-    // If search is provided, search in database
     if (search) {
       const result = await leadService.getLeads({
         skip: (page - 1) * perPage,
@@ -270,7 +263,6 @@ router.get('/leads', async (req: Request, res: Response) => {
       }, 'Leads retrieved from database');
     }
 
-    // Otherwise, try to get from Zoho with database fallback
     const leadsResponse = await leadService.getLeadsFromZoho(page, perPage);
     const leads = leadsResponse.success ? leadsResponse.data?.data || [] : [];
 
@@ -320,7 +312,6 @@ router.post('/leads', async (req: Request, res: Response) => {
   try {
     const leadData = req.body;
 
-    // Validate required fields
     if (!leadData.First_Name || !leadData.Last_Name || !leadData.Email) {
       return sendError(res, 'Missing required fields', 400, 'First_Name, Last_Name, and Email are required');
     }
@@ -401,8 +392,6 @@ router.delete('/leads/:id', async (req: Request, res: Response) => {
 router.post('/sync/leads', async (req: Request, res: Response) => {
   try {
     console.log('🔄 Starting lead sync from Zoho CRM...');
-
-    // For now, return a placeholder response since sync logic should be handled differently
     const result = { synced: 0, errors: ['Sync functionality needs to be implemented'] };
 
     sendSuccess(res, {

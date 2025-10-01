@@ -29,7 +29,6 @@ import {
 } from '@mui/icons-material';
 import OfficeInitializer from '../../components/OfficeInitializer';
 
-// Office.js types
 declare global {
   interface Window {
     Office: any;
@@ -57,13 +56,12 @@ interface AuthStatus {
   error?: string;
 }
 
-// Constants
-const AUTH_CHECK_INTERVAL = 60000; // Check auth status every minute
-const POPUP_CHECK_INTERVAL = 500; // Check popup status every 500ms
-const AUTH_TIMEOUT = 300000; // 5 minutes timeout
-const API_TIMEOUT = 30000; // 30 seconds API timeout
+const AUTH_CHECK_INTERVAL = 60000;
+const POPUP_CHECK_INTERVAL = 500;
+const AUTH_TIMEOUT = 300000;
+const API_TIMEOUT = 30000;
 const MAX_RETRY_ATTEMPTS = 3;
-const RETRY_DELAY = 1000; // 1 second
+const RETRY_DELAY = 1000;
 
 export default function OutlookPage() {
   const router = useRouter();
@@ -79,7 +77,6 @@ export default function OutlookPage() {
   const [officeReady, setOfficeReady] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
 
-  // Use refs to prevent multiple simultaneous operations
   const authCheckRef = useRef<NodeJS.Timeout | null>(null);
   const popupRef = useRef<Window | null>(null);
   const dialogRef = useRef<any>(null);
@@ -88,7 +85,6 @@ export default function OutlookPage() {
   const retryCountRef = useRef(0);
   const redirectStartedRef = useRef(false);
 
-  // Cleanup on unmount
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -110,7 +106,6 @@ export default function OutlookPage() {
     };
   }, []);
 
-  // Memoized fetch with timeout
   const fetchWithTimeout = useCallback(
     async (url: string, options: RequestInit = {}, timeout = API_TIMEOUT) => {
       const controller = new AbortController();
@@ -134,10 +129,8 @@ export default function OutlookPage() {
     []
   );
 
-  // Memoized auth check with retry logic
   const checkAuthStatus = useCallback(
     async (silent = false) => {
-      // Prevent concurrent auth checks
       if (isAuthCheckingRef.current) {
         console.log('Auth check already in progress, skipping...');
         return;
@@ -173,7 +166,6 @@ export default function OutlookPage() {
           setError(null);
           retryCountRef.current = 0;
 
-          // If user just became authenticated, redirect to dashboard after 3 seconds
           if (!wasAuthenticated && result.data.authenticated && result.data.user && !redirectStartedRef.current) {
             console.log('Authentication successful, redirecting to dashboard in 3 seconds...');
             redirectStartedRef.current = true;
@@ -189,7 +181,6 @@ export default function OutlookPage() {
               });
             }, 1000);
 
-            // Separate timeout for redirect
             setTimeout(() => {
               if (mountedRef.current) {
                 console.log('3 seconds elapsed, redirecting to dashboard...');
@@ -200,7 +191,6 @@ export default function OutlookPage() {
             }, 3000);
           }
         } else {
-          // Retry logic for failed auth checks
           if (retryCountRef.current < MAX_RETRY_ATTEMPTS) {
             retryCountRef.current++;
             console.log(
@@ -211,7 +201,7 @@ export default function OutlookPage() {
             }, RETRY_DELAY * retryCountRef.current);
           } else {
             setAuthStatus({ authenticated: false, error: result.message });
-            redirectStartedRef.current = false; // Reset redirect flag on auth failure
+            redirectStartedRef.current = false;
             retryCountRef.current = 0;
           }
         }
@@ -219,7 +209,6 @@ export default function OutlookPage() {
         console.error('Failed to check auth status:', err);
         if (!mountedRef.current) return;
 
-        // Retry on network errors
         if (
           retryCountRef.current < MAX_RETRY_ATTEMPTS &&
           err.message !== 'Request timeout'
@@ -246,7 +235,6 @@ export default function OutlookPage() {
     [fetchWithTimeout]
   );
 
-  // Handle Office.js ready callback
   const handleOfficeReady = useCallback(
     (info: any) => {
       console.log('Office.js ready - Host:', info?.host);
@@ -256,7 +244,6 @@ export default function OutlookPage() {
         extractContactInfo();
       } else {
         console.warn('Not running in Outlook, using demo data');
-        // Set demo data for development
         setContactInfo({
           name: 'John Doe',
           email: 'john.doe@example.com',
@@ -267,20 +254,17 @@ export default function OutlookPage() {
         });
       }
 
-      // Initial auth check after Office is ready
       checkAuthStatus(false);
     },
     [checkAuthStatus]
   );
 
-  // Set up periodic auth check (only after Office is ready)
   useEffect(() => {
     if (!officeReady) return;
 
-    // Set up periodic auth check
     authCheckRef.current = setInterval(() => {
       if (mountedRef.current && !isAuthenticating) {
-        checkAuthStatus(true); // Silent check
+        checkAuthStatus(true);
       }
     }, AUTH_CHECK_INTERVAL);
 
@@ -292,21 +276,12 @@ export default function OutlookPage() {
   }, [officeReady, isAuthenticating, checkAuthStatus]);
 
   const authenticateWithZoho = async () => {
-    // Prevent multiple authentication attempts
     if (isAuthenticating) {
       console.log('Authentication already in progress');
       return;
     }
 
-    // Force popup method (no permission dialog)
     authenticateWithPopup();
-
-    // Check if we're in Office context with Dialog API support
-    // if (window.Office?.context?.ui?.displayDialogAsync) {
-    //   authenticateWithOfficeDialog();
-    // } else {
-    //   authenticateWithPopup();
-    // }
   };
 
   const authenticateWithOfficeDialog = async () => {
@@ -334,7 +309,6 @@ export default function OutlookPage() {
       const authUrl = result.data.authUrl;
       console.log('Opening Office Dialog with URL:', authUrl);
 
-      // Close any existing dialog
       if (dialogRef.current) {
         try {
           dialogRef.current.close();
@@ -344,7 +318,6 @@ export default function OutlookPage() {
         dialogRef.current = null;
       }
 
-      // Use Office Dialog API to open auth popup
       window.Office.context.ui.displayDialogAsync(
         authUrl,
         { height: 70, width: 70, displayInIframe: false },
@@ -357,7 +330,6 @@ export default function OutlookPage() {
             const dialog = asyncResult.value;
             dialogRef.current = dialog;
 
-            // Handle message from dialog
             const messageHandler = async (arg: any) => {
               if (!mountedRef.current) return;
 
@@ -365,7 +337,6 @@ export default function OutlookPage() {
                 const data = JSON.parse(arg.message);
 
                 if (data.success && data.code) {
-                  // Exchange authorization code for tokens
                   try {
                     const tokenResponse = await fetchWithTimeout(
                       `${backendUrl}/auth/zoho/callback?code=${encodeURIComponent(data.code)}`,
@@ -417,7 +388,6 @@ export default function OutlookPage() {
               }
             };
 
-            // Handle dialog events
             const eventHandler = (arg: any) => {
               if (!mountedRef.current) return;
 
@@ -447,7 +417,6 @@ export default function OutlookPage() {
               eventHandler
             );
 
-            // Set timeout for dialog
             setTimeout(() => {
               if (dialogRef.current && mountedRef.current) {
                 try {
@@ -483,7 +452,6 @@ export default function OutlookPage() {
     setError(null);
     setSyncResult(null);
 
-    // Close any existing popup
     if (popupRef.current && !popupRef.current.closed) {
       popupRef.current.close();
     }
@@ -507,7 +475,6 @@ export default function OutlookPage() {
 
       const authUrl = result.data.authUrl;
 
-      // Open popup window
       const popup = window.open(
         authUrl,
         'zoho-auth',
@@ -520,7 +487,6 @@ export default function OutlookPage() {
 
       popupRef.current = popup;
 
-      // Monitor popup for completion
       const checkClosed = setInterval(() => {
         if (!mountedRef.current) {
           clearInterval(checkClosed);
@@ -531,14 +497,12 @@ export default function OutlookPage() {
           clearInterval(checkClosed);
           popupRef.current = null;
           setIsAuthenticating(false);
-          // Check auth status after popup closes
           setTimeout(() => {
             if (mountedRef.current) checkAuthStatus(false);
           }, 1000);
         }
       }, POPUP_CHECK_INTERVAL);
 
-      // Set timeout for popup
       setTimeout(() => {
         if (!popup.closed && mountedRef.current) {
           popup.close();
@@ -566,18 +530,15 @@ export default function OutlookPage() {
       const item = window.Office.context.mailbox.item;
       const info: ContactInfo = {};
 
-      // Extract sender information
       if (item.from) {
         info.name = item.from.displayName || '';
         info.email = item.from.emailAddress || '';
       }
 
-      // Extract subject
       if (item.subject) {
         info.subject = item.subject;
       }
 
-      // Get body with proper null checks
       if (item.body && typeof item.body.getAsync === 'function') {
         item.body.getAsync(window.Office.CoercionType.Text, (result: any) => {
           if (
@@ -754,7 +715,6 @@ export default function OutlookPage() {
         </Alert>
       )}
 
-      {/* Show login button when not authenticated */}
       {!authStatus.authenticated && (
         <Box
           sx={{

@@ -4,12 +4,9 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Configure dotenv FIRST before importing other modules
 const envPath = path.join(__dirname, '../.env');
 console.log('🔧 Loading environment from:', envPath);
 dotenv.config({ path: envPath });
-
-// Also try loading from current directory as fallback
 dotenv.config();
 
 import { config } from './config/env';
@@ -55,9 +52,7 @@ app.use('/api/zoho/data-sharing', zohoDataSharingRoutes);
 app.use('/api/zoho/permissions', zohoPermissionRoutes);
 app.use('/webhooks/zoho', zohoWebhookRoutes);
 
-// Direct route for Zoho OAuth callback (since Zoho redirects to /auth/callback)
 app.get('/auth/callback', async (req, res) => {
-  // Forward to the zoho callback handler
   const { code, error } = req.query;
   
   if (error) {
@@ -82,7 +77,6 @@ app.get('/auth/callback', async (req, res) => {
     
     console.log('✅ Tokens received successfully');
     
-    // Redirect to frontend with success message
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const redirectUrl = `${frontendUrl}?auth=success&message=Authentication successful`;
     
@@ -91,7 +85,6 @@ app.get('/auth/callback', async (req, res) => {
   } catch (error: any) {
     console.error('❌ Token exchange failed:', error.message);
     
-    // Redirect to frontend with error
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const redirectUrl = `${frontendUrl}?auth=error&message=${encodeURIComponent(error.message)}`;
     
@@ -99,7 +92,6 @@ app.get('/auth/callback', async (req, res) => {
   }
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   sendSuccess(res, {
     status: 'OK',

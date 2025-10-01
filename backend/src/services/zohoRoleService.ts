@@ -117,7 +117,6 @@ export class ZohoRoleService {
         reportingTo: zohoRole.reporting_to?.name || 'None'
       });
 
-      // Prepare the role data
       const roleData = {
         zohoRoleId: zohoRole.id,
         name: zohoRole.name,
@@ -134,7 +133,6 @@ export class ZohoRoleService {
         organizationId: organizationId
       };
 
-      // Add optional timestamp fields if they exist
       const createData = {
         ...roleData,
         ...(zohoRole.created_time__s && { createdTime: new Date(zohoRole.created_time__s) }),
@@ -158,7 +156,6 @@ export class ZohoRoleService {
         updatedAt: new Date()
       };
 
-      // Create or update the role
       const dbRole = await prisma.zohoRole.upsert({
         where: { zohoRoleId: zohoRole.id },
         update: updateData,
@@ -239,7 +236,6 @@ export class ZohoRoleService {
         }
       }
 
-      // Update the sync timestamp before starting
       await prisma.appSetting.upsert({
         where: { key: `last_role_sync_${organizationId}` },
         update: { 
@@ -253,7 +249,6 @@ export class ZohoRoleService {
         }
       });
 
-      // Run the role sync in background
       this.syncRolesToDatabase(organizationId)
         .then(result => {
           console.log(`✅ Role sync completed: ${result.synced} roles synced`);
@@ -273,5 +268,4 @@ export class ZohoRoleService {
   }
 }
 
-// Export singleton instance
 export const zohoRoleService = new ZohoRoleService();

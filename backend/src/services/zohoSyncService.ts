@@ -17,7 +17,7 @@ export class ZohoSyncService {
     let totalErrors: string[] = [];
     let page = 1;
     let hasMore = true;
-    const perPage = 200; // Max per page for Zoho API
+    const perPage = 200;
 
     while (hasMore) {
       try {
@@ -32,7 +32,6 @@ export class ZohoSyncService {
         const contacts = result.data.data;
         console.log(`📦 Retrieved ${contacts.length} contacts from page ${page}`);
 
-        // Sync each contact
         for (const zohoContact of contacts) {
           try {
             await contactService.syncFromZoho(zohoContact, organizationId);
@@ -42,7 +41,6 @@ export class ZohoSyncService {
           }
         }
 
-        // Check if we have more pages
         hasMore = contacts.length === perPage;
         page++;
         
@@ -95,7 +93,6 @@ export class ZohoSyncService {
         }
       }
 
-      // Update the sync timestamp before starting
       await prisma.appSetting.upsert({
         where: { key: `last_contact_sync_${organizationId}` },
         update: { 
@@ -109,7 +106,6 @@ export class ZohoSyncService {
         }
       });
 
-      // Run the contact sync in background
       this.syncContactsFromZoho()
         .then(result => {
           console.log(`✅ [CONTACT SYNC] Contact sync completed: ${result.synced} contacts synced across ${result.pages} pages`);

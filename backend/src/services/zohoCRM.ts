@@ -3,16 +3,12 @@ import { ZOHO_CONFIG, ZohoUser, ZohoAPIResponse } from '../config/zoho';
 import { zohoAuthService } from './zohoAuth';
 
 export class ZohoCRMService {
-  /**
-   * Make authenticated API call to Zoho CRM
-   */
   async makeAPICall<T>(
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     data?: any
   ): Promise<ZohoAPIResponse<T>> {
     try {
-      // Get valid access token
       const accessToken = await zohoAuthService.getValidAccessToken();
 
       const config: AxiosRequestConfig = {
@@ -76,5 +72,4 @@ export class ZohoCRMService {
   }
 }
 
-// Export singleton instance
 export const zohoCRMService = new ZohoCRMService();

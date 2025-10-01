@@ -3,15 +3,6 @@ import { sendSuccess, sendError, validateRequired } from '../utils/response';
 
 const router: Router = express.Router();
 
-// Hello endpoint
-router.get('/hello', (req, res) => {
-  sendSuccess(res, {
-    message: 'Hello from the backend server!',
-    endpoint: '/api/hello',
-    version: '2.0.0'
-  }, 'Backend connection successful');
-});
-
 // Users endpoint (example with mock data)
 router.get('/users', (req, res) => {
   const mockUsers = [

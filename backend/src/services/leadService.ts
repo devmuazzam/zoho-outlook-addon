@@ -296,7 +296,6 @@ export class LeadService {
 
     const result = await zohoCRMService.makeAPICall('/Leads', 'POST', payload);
     
-    // If successful, sync the created lead to local database
     if (result.success && result.data) {
       try {
         const responseData = result.data as any;
@@ -345,7 +344,6 @@ export class LeadService {
   async deleteLeadFromZoho(leadId: string): Promise<ZohoAPIResponse<any>> {
     const result = await zohoCRMService.makeAPICall(`/Leads/${leadId}`, 'DELETE');
     
-    // If successful, mark as inactive in local database
     if (result.success) {
       try {
         const localLead = await this.getLeadByZohoId(leadId);

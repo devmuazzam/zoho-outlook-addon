@@ -135,11 +135,9 @@ export class ZohoUserSyncService {
         roleName: zohoUser.role?.name
       });
 
-      // Determine user role based on profile
       const isAdministrator = zohoUser.profile?.name === 'Administrator';
       const userRole = isAdministrator ? 'ADMIN' : 'USER';
       
-      // Find the corresponding profile and role in our database
       const dbProfile = await prisma.zohoProfile.findUnique({
         where: { zohoProfileId: zohoUser.profile?.id }
       });
@@ -156,7 +154,6 @@ export class ZohoUserSyncService {
         console.warn(`⚠️ Role not found in database: ${zohoUser.role?.id} (${zohoUser.role?.name})`);
       }
 
-      // Prepare user data
       const userData = {
         name: zohoUser.full_name,
         zohoUserId: zohoUser.id,
@@ -305,7 +302,6 @@ export class ZohoUserSyncService {
     try {
       console.log(`🚀 Triggering user sync for organization: ${organizationId}`);
       
-      // Run sync in background
       this.syncUsersToDatabase(organizationId).catch((error: any) => {
         console.error('❌ Background user sync failed:', error.message);
       });
@@ -317,5 +313,4 @@ export class ZohoUserSyncService {
   }
 }
 
-// Export singleton instance
 export const zohoUserSyncService = new ZohoUserSyncService();

@@ -158,7 +158,6 @@ export default function PermissionTestPage() {
       )}
 
       <Grid container spacing={3}>
-        {/* Current User Information */}
         <Grid size={{ xs: 12, lg: 6 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: 3 }}>
@@ -277,7 +276,6 @@ export default function PermissionTestPage() {
           </Card>
         </Grid>
 
-        {/* Permission Test */}
         <Grid size={{ xs: 12, lg: 6 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: 3 }}>
@@ -387,7 +385,6 @@ export default function PermissionTestPage() {
         </Grid>
       </Grid>
 
-      {/* How it Works */}
       <Card sx={{ mt: 3 }}>
         <CardContent sx={{ p: 3 }}>
           <Typography variant="h5" component="h2" gutterBottom>

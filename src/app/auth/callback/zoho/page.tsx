@@ -9,18 +9,15 @@ function ZohoCallbackContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check for error parameters
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
 
     if (error) {
       console.error('OAuth Error:', error, errorDescription);
-      // Redirect to outlook app with error
       setTimeout(() => router.push('/outlook-app'), 3000);
       return;
     }
 
-    // If no error, redirect to dashboard after a brief delay
     setTimeout(() => router.push('/dashboard'), 2000);
   }, [router, searchParams]);
 

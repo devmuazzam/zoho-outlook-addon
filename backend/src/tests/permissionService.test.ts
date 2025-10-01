@@ -1,37 +1,22 @@
-/**
- * Basic tests for Zoho Permission Service
- * 
- * Run with: npm test
- */
-
-// Simple test for the ultra-simplified Zoho Permission Service
 import { zohoPermissionService } from '../services/zohoPermissionService';
 import prisma from '../lib/prisma';
-
-/**
- * Ultra-Simplified Permission Service Tests
- * 
- * Tests for the new interface that accepts only moduleName and recordId
- */
 
 async function testUltraSimplifiedService() {
   console.log('🧪 Testing Ultra-Simplified Zoho Permission Service');
   console.log('===================================================\n');
 
   const testOrgId = 'test-org-123';
-  
+
   try {
-    // Setup test data first
     await setupTestData(testOrgId);
-    
-    // Test 1: Basic permission check with contact ID
+
     console.log('📋 Test 1: Basic Permission Check');
     try {
       const result = await zohoPermissionService.checkModulePermissions({
         moduleName: 'Contacts',
         recordId: 'test-contact-1'
       });
-      
+
       console.log('✅ Test 1 Passed:');
       console.log(`   - Access Type: ${result.accessType}`);
       console.log(`   - Hierarchy Used: ${result.hierarchyUsed}`);
@@ -40,8 +25,7 @@ async function testUltraSimplifiedService() {
       console.log(`❌ Test 1 Failed: ${error.message}`);
     }
     console.log('');
-    
-    // Test 2: Non-existent contact
+
     console.log('📋 Test 2: Non-existent Contact');
     try {
       const result = await zohoPermissionService.checkModulePermissions({
@@ -53,8 +37,7 @@ async function testUltraSimplifiedService() {
       console.log(`✅ Test 2 Passed: Correctly threw error - ${error.message}`);
     }
     console.log('');
-    
-    // Test 3: Permission summary
+
     console.log('📋 Test 3: Permission Summary');
     try {
       const summary = await zohoPermissionService.getPermissionSummary(testOrgId, 'Contacts');
@@ -67,21 +50,18 @@ async function testUltraSimplifiedService() {
       console.log(`❌ Test 3 Failed: ${error.message}`);
     }
     console.log('');
-    
+
   } catch (error: any) {
     console.error('❌ Test setup failed:', error.message);
   } finally {
-    // Cleanup test data
     await cleanupTestData(testOrgId);
     await prisma.$disconnect();
   }
 }
 
-// Helper functions for test setup
 async function setupTestData(testOrgId: string) {
   console.log('🔧 Setting up test data...');
-  
-  // Create test organization
+
   const testOrg = await prisma.organization.upsert({
     where: { id: testOrgId },
     update: {},
@@ -93,7 +73,6 @@ async function setupTestData(testOrgId: string) {
     }
   });
 
-  // Create test profile
   const testProfile = await prisma.zohoProfile.upsert({
     where: { zohoProfileId: 'test-profile-1' },
     update: {},
@@ -106,7 +85,6 @@ async function setupTestData(testOrgId: string) {
     }
   });
 
-  // Create test profile permissions
   await prisma.zohoProfilePermission.upsert({
     where: {
       profileId_zohoPermId: {
@@ -125,7 +103,6 @@ async function setupTestData(testOrgId: string) {
     }
   });
 
-  // Create test role
   const testRole = await prisma.zohoRole.upsert({
     where: { zohoRoleId: 'test-role-1' },
     update: {},
@@ -138,7 +115,6 @@ async function setupTestData(testOrgId: string) {
     }
   });
 
-  // Create test user
   const testUser = await prisma.user.upsert({
     where: { email: 'test@example.com' },
     update: {},
@@ -153,7 +129,6 @@ async function setupTestData(testOrgId: string) {
     }
   });
 
-  // Create test contact
   await prisma.contact.upsert({
     where: { id: 'test-contact-1' },
     update: {},
@@ -168,7 +143,6 @@ async function setupTestData(testOrgId: string) {
     }
   });
 
-  // Create test data sharing rule (public)
   await prisma.zohoDataSharingRule.create({
     data: {
       organizationId: testOrgId,
@@ -183,14 +157,13 @@ async function setupTestData(testOrgId: string) {
       }
     }
   });
-  
+
   console.log('✅ Test data setup complete');
 }
 
 async function cleanupTestData(testOrgId: string) {
   console.log('🗑️ Cleaning up test data...');
-  
-  // Clean up in reverse order due to foreign key constraints
+
   await prisma.contact.deleteMany({
     where: {
       user: {
@@ -198,15 +171,15 @@ async function cleanupTestData(testOrgId: string) {
       }
     }
   });
-  
+
   await prisma.zohoDataSharingRule.deleteMany({
     where: { organizationId: testOrgId }
   });
-  
+
   await prisma.user.deleteMany({
     where: { organizationId: testOrgId }
   });
-  
+
   await prisma.zohoProfilePermission.deleteMany({
     where: {
       profile: {
@@ -214,26 +187,24 @@ async function cleanupTestData(testOrgId: string) {
       }
     }
   });
-  
+
   await prisma.zohoProfile.deleteMany({
     where: { organizationId: testOrgId }
   });
-  
+
   await prisma.zohoRole.deleteMany({
     where: { organizationId: testOrgId }
   });
-  
+
   await prisma.organization.deleteMany({
     where: { id: testOrgId }
   });
-  
+
   console.log('✅ Test data cleanup complete');
 }
 
-// Export test function
 export { testUltraSimplifiedService };
 
-// Run test if this file is executed directly
 if (require.main === module) {
   testUltraSimplifiedService()
     .then(() => {

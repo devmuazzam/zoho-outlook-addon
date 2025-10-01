@@ -27,12 +27,10 @@ export default function ZohoCRMPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Check auth status on component mount
   useEffect(() => {
     checkAuthStatus();
   }, []);
 
-  // Check URL params for auth callback
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -43,14 +41,12 @@ export default function ZohoCRMPage() {
     if (authParam === 'success') {
       setSuccess(messageParam || 'Authentication successful');
       checkAuthStatus();
-      // Clean URL by removing query params without using history API
       if (window.location.search) {
         const newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
         window.history.replaceState(null, '', newUrl);
       }
     } else if (authParam === 'error') {
       setError(messageParam || 'Authentication failed');
-      // Clean URL by removing query params without using history API
       if (window.location.search) {
         const newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
         window.history.replaceState(null, '', newUrl);

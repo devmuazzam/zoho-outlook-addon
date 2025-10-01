@@ -143,7 +143,6 @@ export class ContactService {
     try {
       console.log(`🔄 Syncing contact ${zohoContact.id} from Zoho CRM...`);
 
-      // Find the contact owner in our local database using Zoho user ID
       let userId: string | undefined = undefined;
       if (zohoContact.Owner?.id) {
         const owner = await this.db.user.findUnique({
@@ -308,7 +307,6 @@ export class ContactService {
 
     const result = await zohoCRMService.makeAPICall(`/Contacts/${contactId}`, 'PUT', payload);
     
-    // If successful, sync the updated contact to local database
     if (result.success) {
       try {
         const updatedContact = await this.getContactFromZoho(contactId);
@@ -329,7 +327,6 @@ export class ContactService {
   async deleteContactFromZoho(contactId: string): Promise<ZohoAPIResponse<any>> {
     const result = await zohoCRMService.makeAPICall(`/Contacts/${contactId}`, 'DELETE');
     
-    // If successful, mark as inactive in local database
     if (result.success) {
       try {
         const localContact = await this.getContactByZohoId(contactId);

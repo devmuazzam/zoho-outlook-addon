@@ -18,7 +18,6 @@ export default function OfficeInitializer({ children, onOfficeReady }: OfficeIni
 
     const initOffice = async () => {
       try {
-        // Add ngrok bypass headers if we're in an iframe
         if (typeof window !== 'undefined' && window.parent !== window) {
           const meta = document.createElement('meta');
           meta.httpEquiv = 'ngrok-skip-browser-warning';
@@ -26,9 +25,7 @@ export default function OfficeInitializer({ children, onOfficeReady }: OfficeIni
           document.head.appendChild(meta);
         }
 
-        // Check if Office.js is available
         if (typeof window !== 'undefined' && window.Office) {
-          // Office.js is available, initialize it
           await new Promise<void>((resolve, reject) => {
             window.Office.onReady((info: any) => {
               if (mounted) {
@@ -40,7 +37,6 @@ export default function OfficeInitializer({ children, onOfficeReady }: OfficeIni
               }
             });
 
-            // Timeout after 10 seconds
             setTimeout(() => {
               if (mounted && !isInitialized) {
                 reject(new Error('Office.js initialization timeout'));
@@ -48,7 +44,6 @@ export default function OfficeInitializer({ children, onOfficeReady }: OfficeIni
             }, 10000);
           });
         } else {
-          // Office.js not available, check if we're in development
           if (process.env.NODE_ENV === 'development') {
             console.warn('Office.js not available - running in development mode');
             setIsInitialized(true);

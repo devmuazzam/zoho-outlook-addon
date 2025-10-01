@@ -67,19 +67,16 @@ export default function DashboardPage() {
         if (result.data.authenticated && result.data.user) {
           setAuthStatus(result.data);
         } else {
-          // Not authenticated, redirect to outlook app
           router.push('/outlook-app');
           return;
         }
       } else {
         setError(result.message || 'Failed to check authentication status');
-        // On error, redirect to outlook app
         setTimeout(() => router.push('/outlook-app'), 3000);
       }
     } catch (err: any) {
       console.error('Failed to check auth status:', err);
       setError('Failed to check authentication status');
-      // On error, redirect to outlook app
       setTimeout(() => router.push('/outlook-app'), 3000);
     } finally {
       setLoading(false);
@@ -139,7 +136,6 @@ export default function DashboardPage() {
     `${authStatus.user?.first_name || ''} ${authStatus.user?.last_name || ''}`.trim() ||
     'User';
 
-  // Check if user is Administrator
   const roleName = authStatus.user?.profile?.name?.toLowerCase() || '';
   const isAdmin =
     roleName.includes('admin') ||
@@ -147,11 +143,9 @@ export default function DashboardPage() {
     roleName.includes('super') ||
     roleName === 'owner';
 
-  // Check if non-admin user has organization in database
   const hasOrganization = authStatus.dbUser?.organization !== null;
   const shouldShowContactAdmin = !isAdmin && !hasOrganization;
 
-  // Helper function to get user initials for avatar
   const getUserInitials = (name: string) => {
     return name
       .split(' ')
@@ -220,7 +214,6 @@ export default function DashboardPage() {
             </Typography>
           </Box>
 
-          {/* Show contact administrator message for non-admin users without organization */}
           {shouldShowContactAdmin && (
             <Alert
               severity="warning"
@@ -246,10 +239,8 @@ export default function DashboardPage() {
             </Alert>
           )}
 
-          {/* Only show user details and admin controls if user has access */}
           {!shouldShowContactAdmin && (
             <>
-              {/* Compact User Information Card */}
               <Card
                 variant="outlined"
                 sx={{
@@ -259,7 +250,6 @@ export default function DashboardPage() {
                   overflow: 'hidden',
                 }}
               >
-                {/* Compact Header */}
                 <Box
                   sx={{
                     background:
@@ -282,15 +272,13 @@ export default function DashboardPage() {
                     }}
                   >
                     {getUserInitials(userName)}
-                  </Avatar> 
+                  </Avatar>
                 </Box>
 
                 <CardContent sx={{ p: 2 }}>
-                  {/* Stacked User Details */}
                   <Box
                     sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
                   >
-                    {/* Email */}
                     <Box>
                       <Typography
                         variant="caption"
@@ -318,7 +306,6 @@ export default function DashboardPage() {
                       </Typography>
                     </Box>
 
-                    {/* Role */}
                     <Box>
                       <Typography
                         variant="caption"
@@ -352,7 +339,6 @@ export default function DashboardPage() {
                       </Box>
                     </Box>
 
-                    {/* Profile */}
                     <Box>
                       <Typography
                         variant="caption"
@@ -382,7 +368,6 @@ export default function DashboardPage() {
                       </Box>
                     </Box>
 
-                    {/* Organization */}
                     {(authStatus.dbUser?.organization ||
                       authStatus.user?.organization) && (
                       <Box>
@@ -419,7 +404,6 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* Admin Controls */}
               {isAdmin && (
                 <Card
                   variant="outlined"
@@ -430,7 +414,6 @@ export default function DashboardPage() {
                     overflow: 'hidden',
                   }}
                 >
-                  {/* Compact Header */}
                   <Box
                     sx={{
                       background:

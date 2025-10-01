@@ -1,18 +1,14 @@
 import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
-import { ZOHO_CONFIG, ZohoContact, ZohoLead, ZohoUser, ZohoAPIResponse } from '../config/zoho';
+import { ZOHO_CONFIG, ZohoUser, ZohoAPIResponse } from '../config/zoho';
 import { zohoAuthService } from './zohoAuth';
 
 export class ZohoCRMService {
-  /**
-   * Make authenticated API call to Zoho CRM
-   */
-  private async makeAPICall<T>(
+  async makeAPICall<T>(
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     data?: any
   ): Promise<ZohoAPIResponse<T>> {
     try {
-      // Get valid access token
       const accessToken = await zohoAuthService.getValidAccessToken();
 
       const config: AxiosRequestConfig = {
@@ -56,108 +52,10 @@ export class ZohoCRMService {
   }
 
   /**
-   * Get contacts with pagination
+   * Get organization information
    */
-  async getContacts(page: number = 1, perPage: number = 10): Promise<ZohoAPIResponse<{ data: ZohoContact[] }>> {
-    return this.makeAPICall<{ data: ZohoContact[] }>(`/Contacts?page=${page}&per_page=${perPage}`);
-  }
-
-  /**
-   * Get a specific contact by ID
-   */
-  async getContact(contactId: string): Promise<ZohoAPIResponse<{ data: ZohoContact[] }>> {
-    return this.makeAPICall<{ data: ZohoContact[] }>(`/Contacts/${contactId}`);
-  }
-
-  /**
-   * Create a new contact
-   */
-  async createContact(contactData: Partial<ZohoContact>): Promise<ZohoAPIResponse<any>> {
-    const payload = {
-      data: [{
-        First_Name: contactData.First_Name,
-        Last_Name: contactData.Last_Name,
-        Email: contactData.Email,
-        Phone: contactData.Phone,
-        Company: contactData.Company
-      }]
-    };
-
-    return this.makeAPICall('/Contacts', 'POST', payload);
-  }
-
-  /**
-   * Update an existing contact
-   */
-  async updateContact(contactId: string, contactData: Partial<ZohoContact>): Promise<ZohoAPIResponse<any>> {
-    const payload = {
-      data: [{
-        id: contactId,
-        ...contactData
-      }]
-    };
-
-    return this.makeAPICall(`/Contacts/${contactId}`, 'PUT', payload);
-  }
-
-  /**
-   * Delete a contact
-   */
-  async deleteContact(contactId: string): Promise<ZohoAPIResponse<any>> {
-    return this.makeAPICall(`/Contacts/${contactId}`, 'DELETE');
-  }
-
-  /**
-   * Get leads with pagination
-   */
-  async getLeads(page: number = 1, perPage: number = 10): Promise<ZohoAPIResponse<{ data: ZohoLead[] }>> {
-    return this.makeAPICall<{ data: ZohoLead[] }>(`/Leads?page=${page}&per_page=${perPage}`);
-  }
-
-  /**
-   * Get a specific lead by ID
-   */
-  async getLead(leadId: string): Promise<ZohoAPIResponse<{ data: ZohoLead[] }>> {
-    return this.makeAPICall<{ data: ZohoLead[] }>(`/Leads/${leadId}`);
-  }
-
-  /**
-   * Create a new lead
-   */
-  async createLead(leadData: Partial<ZohoLead>): Promise<ZohoAPIResponse<any>> {
-    const payload = {
-      data: [{
-        First_Name: leadData.First_Name,
-        Last_Name: leadData.Last_Name,
-        Email: leadData.Email,
-        Phone: leadData.Phone,
-        Company: leadData.Company,
-        Lead_Status: leadData.Lead_Status || 'Not Contacted'
-      }]
-    };
-
-    return this.makeAPICall('/Leads', 'POST', payload);
-  }
-
-  /**
-   * Update an existing lead
-   */
-  async updateLead(leadId: string, leadData: Partial<ZohoLead>): Promise<ZohoAPIResponse<any>> {
-    const payload = {
-      data: [{
-        id: leadId,
-        ...leadData
-      }]
-    };
-
-    return this.makeAPICall(`/Leads/${leadId}`, 'PUT', payload);
-  }
-
-  /**
-   * Delete a lead
-   */
-  async deleteLead(leadId: string): Promise<ZohoAPIResponse<any>> {
-    return this.makeAPICall(`/Leads/${leadId}`, 'DELETE');
+  async getOrganization(): Promise<ZohoAPIResponse<any>> {
+    return this.makeAPICall('/org');
   }
 
   /**
@@ -172,14 +70,6 @@ export class ZohoCRMService {
     const encodedCriteria = encodeURIComponent(criteria);
     return this.makeAPICall(`/${module}/search?criteria=${encodedCriteria}&page=${page}&per_page=${perPage}`);
   }
-
-  /**
-   * Get organization information
-   */
-  async getOrganization(): Promise<ZohoAPIResponse<any>> {
-    return this.makeAPICall('/org');
-  }
 }
 
-// Export singleton instance
 export const zohoCRMService = new ZohoCRMService();

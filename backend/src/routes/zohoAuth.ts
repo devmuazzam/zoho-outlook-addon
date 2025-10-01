@@ -11,7 +11,6 @@ const router: Router = express.Router();
  */
 router.get('/login', (req: Request, res: Response) => {
   try {
-    // Validate required environment variables
     const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = ZOHO_CONFIG;
     
     console.log('🔄 Checking Zoho OAuth credentials...');
@@ -63,18 +62,18 @@ router.get('/callback', async (req: Request, res: Response) => {
     
     console.log('✅ Tokens received successfully');
     
-    // For web app, redirect to frontend with success message
+    // For web app, redirect to success page with success message
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const redirectUrl = `${frontendUrl}?auth=success&message=Authentication successful`;
+    const redirectUrl = `${frontendUrl}/auth/success?auth=success&message=Authentication successful`;
     
     res.redirect(redirectUrl);
     
   } catch (error: any) {
     console.error('❌ Token exchange failed:', error.message);
     
-    // Redirect to frontend with error
+    // Redirect to success page with error
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const redirectUrl = `${frontendUrl}?auth=error&message=${encodeURIComponent(error.message)}`;
+    const redirectUrl = `${frontendUrl}/auth/success?auth=error&message=${encodeURIComponent(error.message)}`;
     
     res.redirect(redirectUrl);
   }
@@ -82,14 +81,25 @@ router.get('/callback', async (req: Request, res: Response) => {
 
 /**
  * GET /auth/zoho/status
- * Check current authentication status
+ * Check current authentication status with database user info
  */
 router.get('/status', async (req: Request, res: Response) => {
   try {
     const authStatus = await zohoAuthService.getAuthStatus();
     
+    let dbUser = null;
+    if (authStatus.authenticated) {
+      try {
+        dbUser = await zohoAuthService.getCurrentUserWithOrganization();
+      } catch (dbError: any) {
+        console.warn('⚠️ Failed to get database user info:', dbError.message);
+      }
+    }
+    
     sendSuccess(res, {
       authenticated: authStatus.authenticated,
+      user: authStatus.user,
+      dbUser: dbUser,
       message: authStatus.message,
       authUrl: authStatus.authUrl,
       tokenInfo: authStatus.tokens ? {

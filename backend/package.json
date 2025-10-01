@@ -1,7 +1,7 @@
 {
-  "name": "zoho-v2-backend",
+  "name": "smb-dynamics-backend",
   "version": "1.0.0",
-  "description": "Backend server for Zoho V2 application",
+  "description": "Backend server for SMB Dynamics application",
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon src/index.ts",

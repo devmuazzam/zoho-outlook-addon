@@ -1,4 +1,3 @@
-// Zoho CRM OAuth configuration and types
 export interface ZohoOAuthConfig {
   CLIENT_ID: string;
   CLIENT_SECRET: string;
@@ -20,6 +19,7 @@ export interface ZohoAuthResponse {
   success: boolean;
   authenticated: boolean;
   tokens?: ZohoTokens;
+  user?: ZohoUser;
   authUrl?: string;
   message?: string;
   error?: string;
@@ -68,6 +68,8 @@ export interface ZohoUser {
     name: string;
     id: string;
   };
+  organization?: string;
+  zgid?: string;
 }
 
 export interface ZohoWebhookData {
@@ -82,16 +84,14 @@ export interface ZohoWebhookData {
 export const ZOHO_CONFIG: ZohoOAuthConfig = {
   CLIENT_ID: process.env.ZOHO_CLIENT_ID || '',
   CLIENT_SECRET: process.env.ZOHO_CLIENT_SECRET || '',
-  REDIRECT_URI: process.env.ZOHO_REDIRECT_URI || 'http://localhost:3002/auth/callback',
+  REDIRECT_URI: process.env.ZOHO_REDIRECT_URI || 'http://localhost:3001/api/auth/callback/zoho',
   SCOPES: [
     'ZohoCRM.modules.contacts.READ',
     'ZohoCRM.modules.contacts.WRITE',
-    'ZohoCRM.modules.leads.READ',
-    'ZohoCRM.modules.leads.WRITE',
-    'ZohoCRM.modules.deals.READ',
     'ZohoCRM.users.READ',
     'ZohoCRM.org.READ',
-    'ZohoCRM.settings.ALL'
+    'ZohoCRM.settings.ALL',
+    'ZohoCRM.modules.ALL'
   ].join(','),
   BASE_URL: 'https://accounts.zoho.com/oauth/v2',
   API_BASE_URL: 'https://www.zohoapis.com/crm/v2'

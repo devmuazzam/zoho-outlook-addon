@@ -1,16 +1,15 @@
 import axios, { AxiosResponse } from 'axios';
-import { ZOHO_CONFIG, ZohoTokens, ZohoAuthResponse } from '../config/zoho';
+import { ZOHO_CONFIG, ZohoTokens, ZohoAuthResponse, ZohoUser } from '../config/zoho';
 import { sendSuccess, sendError } from '../utils/response';
 import prisma from '../lib/prisma';
 
 export class ZohoAuthService {
-  private readonly defaultUserId = 'default_user'; // For demo purposes
+  private currentUserEmail: string | null = null;
 
   /**
    * Generate Zoho OAuth authorization URL
    */
   getAuthorizationUrl(): string {
-    // Build the authorization URL exactly like the working reference
     const authURL = `${ZOHO_CONFIG.BASE_URL}/auth?` +
       `scope=${encodeURIComponent(ZOHO_CONFIG.SCOPES)}&` +
       `client_id=${ZOHO_CONFIG.CLIENT_ID}&` +
@@ -58,7 +57,7 @@ export class ZohoAuthService {
         expires_at: Date.now() + (response.data.expires_in * 1000)
       };
 
-      // Store tokens in database
+      await this.createOrUpdateUserFromToken(tokens.access_token);
       await this.storeTokensInDatabase(tokens);
 
       return tokens;
@@ -69,26 +68,214 @@ export class ZohoAuthService {
   }
 
   /**
+   * Create or update user from Zoho token
+   */
+  private async createOrUpdateUserFromToken(accessToken: string): Promise<void> {
+    try {
+      console.log('🔄 Fetching user info from Zoho...');
+      
+      const userResponse = await axios.get(
+        `${ZOHO_CONFIG.API_BASE_URL}/users?type=CurrentUser`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!userResponse.data?.users?.[0]) {
+        throw new Error('No user data received from Zoho');
+      }
+
+      const zohoUser = userResponse.data.users[0];
+      const isAdministrator = zohoUser.profile?.name === 'Administrator';
+      
+      console.log('📡 Zoho user data:', {
+        id: zohoUser.id,
+        name: zohoUser.full_name,
+        email: zohoUser.email,
+        profile: zohoUser.profile?.name,
+        role: zohoUser.role?.name,
+        isAdministrator
+      });
+      console.log('✅ Zoho user authenticated:', zohoUser);
+      const userRole = isAdministrator ? 'ADMIN' : 'USER';
+      
+      await prisma.user.upsert({
+        where: { email: zohoUser.email },
+        update: {
+          name: zohoUser.full_name,
+          zohoUserId: zohoUser.id,
+          role: userRole,
+          updatedAt: new Date()
+        },
+        create: {
+          email: zohoUser.email,
+          name: zohoUser.full_name,
+          zohoUserId: zohoUser.id,
+          role: userRole
+        }
+      });
+
+      // Get organization details from Zoho CRM using direct API call
+      try {
+        console.log('🔄 Fetching organization details from Zoho CRM...');
+        
+        // Get organization info directly from Zoho API
+        const orgResponse = await axios.get(
+          `${ZOHO_CONFIG.API_BASE_URL}/org`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (orgResponse.data?.org?.[0]) {
+          const org = orgResponse.data.org[0];
+          console.log('🏢 Organization Details:', {
+            name: org.company_name,
+            id: org.id,
+            country: org.country,
+            time_zone: org.time_zone,
+            currency: org.currency,
+            domain: org.domain_name,
+            website: org.website,
+            email: org.primary_email,
+            phone: org.phone,
+            employee_count: org.employee_count,
+            license_details: org.licence_details,
+            userIsAdmin: isAdministrator
+          });
+          
+          let dbOrganization;
+          
+          if (isAdministrator) {
+            console.log('👑 Administrator user - syncing organization to database');
+            dbOrganization = await prisma.organization.upsert({
+              where: { zohoOrgId: org.id },
+              update: {
+                name: org.company_name,
+                domain: org.domain_name,
+                updatedAt: new Date()
+              },
+              create: {
+                zohoOrgId: org.id,
+                name: org.company_name,
+                domain: org.domain_name
+              }
+            });
+            
+            console.log('✅ Organization created/updated in database:', {
+              id: dbOrganization.id,
+              zohoOrgId: dbOrganization.zohoOrgId,
+              name: dbOrganization.name,
+              domain: dbOrganization.domain
+            });
+
+            // Trigger profile sync for administrators
+            this.triggerProfileSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ Profile sync failed:', error.message);
+            });
+
+            // Trigger role sync for administrators
+            this.triggerRoleSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ Role sync failed:', error.message);
+            });
+
+            // Trigger data sharing sync for administrators
+            this.triggerDataSharingSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ Data sharing sync failed:', error.message);
+            });
+
+            // Trigger user sync for administrators
+            this.triggerUserSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ User sync failed:', error.message);
+            });
+
+            // Trigger contact sync for administrators (moved from general auth flow)
+            this.triggerContactSync(dbOrganization.id).catch((error: any) => {
+              console.error('❌ Contact sync failed:', error.message);
+            });
+          } else {
+            // Non-administrator: Only lookup existing organization
+            console.log('👤 Non-administrator user - looking up existing organization');
+            dbOrganization = await prisma.organization.findUnique({
+              where: { zohoOrgId: org.id }
+            });
+            
+            if (dbOrganization) {
+              console.log('✅ Found existing organization in database:', {
+                id: dbOrganization.id,
+                zohoOrgId: dbOrganization.zohoOrgId,
+                name: dbOrganization.name
+              });
+            } else {
+              console.log('⚠️ Organization not found in database - user will need admin to login first');
+            }
+          }
+          
+          // Link user to organization if it exists in our database
+          if (dbOrganization) {
+            await prisma.user.update({
+              where: { email: zohoUser.email },
+              data: {
+                organizationId: dbOrganization.id
+              }
+            });
+            
+            console.log('✅ User linked to organization successfully');
+            
+            // For administrators, trigger profile/role assignment after sync
+            if (isAdministrator) {
+              this.updateUserProfileAndRole(zohoUser, dbOrganization.id).catch((error: any) => {
+                console.error('❌ Failed to update user profile/role:', error.message);
+              });
+            } else {
+              // For non-admin users, try to assign profile/role immediately if they exist
+              this.assignExistingProfileAndRole(zohoUser).catch((error: any) => {
+                console.error('❌ Failed to assign existing profile/role:', error.message);
+              });
+            }
+          } else if (!isAdministrator) {
+            console.log('⚠️ Non-administrator user not linked to organization - admin must login first');
+          }
+          
+        } else {
+          console.warn('⚠️ No organization data received from Zoho');
+        }
+        
+      } catch (orgError: any) {
+        console.error('❌ Error fetching organization details:', orgError.response?.data || orgError.message);
+      }
+
+      // Set current user email for token storage
+      this.currentUserEmail = zohoUser.email;
+      console.log('✅ User created/updated from Zoho token');
+    } catch (error: any) {
+      console.error('❌ Failed to create/update user from token:', error.message);
+    }
+  }
+
+  /**
    * Store tokens in database
    */
   private async storeTokensInDatabase(tokens: ZohoTokens): Promise<void> {
     try {
-      // First, ensure we have a default user
-      let user = await prisma.user.findUnique({
-        where: { email: 'default@zoho-v2.local' }
+      if (!this.currentUserEmail) {
+        throw new Error('No current user email available for token storage');
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email: this.currentUserEmail }
       });
 
       if (!user) {
-        user = await prisma.user.create({
-          data: {
-            email: 'default@zoho-v2.local',
-            name: 'Default User',
-            role: 'ADMIN'
-          }
-        });
+        throw new Error(`User with email ${this.currentUserEmail} not found`);
       }
 
-      // Store or update the tokens
       await prisma.zohoAuthToken.upsert({
         where: { userId: user.id },
         update: {
@@ -112,7 +299,6 @@ export class ZohoAuthService {
       console.log('✅ Tokens stored in database successfully');
     } catch (error: any) {
       console.error('❌ Failed to store tokens in database:', error.message);
-      // Fallback to in-memory storage if database is not available
       console.warn('⚠️ Falling back to in-memory token storage');
     }
   }
@@ -122,16 +308,20 @@ export class ZohoAuthService {
    */
   private async getTokensFromDatabase(): Promise<ZohoTokens | null> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { email: 'default@zoho-v2.local' },
-        include: { zohoTokens: true }
-      });
-
-      if (!user || !user.zohoTokens || user.zohoTokens.length === 0) {
+      if (!this.currentUserEmail) {
         return null;
       }
 
-      const tokenRecord = user.zohoTokens[0];
+      const user = await prisma.user.findUnique({
+        where: { email: this.currentUserEmail },
+        include: { zohoTokens: true }
+      });
+
+      if (!user || !user.zohoTokens) {
+        return null;
+      }
+
+      const tokenRecord = user.zohoTokens;
       return {
         access_token: tokenRecord.accessToken,
         refresh_token: tokenRecord.refreshToken || undefined,
@@ -203,11 +393,44 @@ export class ZohoAuthService {
 
     const isExpired = this.isTokenExpired(tokens);
 
+    if (isExpired) {
+      return {
+        success: true,
+        authenticated: false,
+        tokens: undefined,
+        message: 'Token expired. Please refresh or re-authenticate.',
+        authUrl: this.getAuthorizationUrl()
+      };
+    }
+
+    // Get user information when authenticated
+    let user: ZohoUser | undefined = undefined;
+    try {
+      const { zohoCRMService } = await import('./zohoCRM');
+      const userResponse = await zohoCRMService.getCurrentUser();
+
+      if (userResponse.success && userResponse.data?.users?.[0]) {
+        user = userResponse.data.users[0];
+
+        try {
+          const orgResponse = await zohoCRMService.getOrganization();
+          if (orgResponse.success && orgResponse.data) {
+            user.organization = orgResponse.data.company_name || orgResponse.data.name;
+          }
+        } catch (orgError) {
+          console.warn('Failed to fetch organization information:', orgError);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch user information:', error);
+    }
+
     return {
       success: true,
-      authenticated: !isExpired,
-      tokens: isExpired ? undefined : tokens,
-      message: isExpired ? 'Token expired. Please refresh or re-authenticate.' : 'Authentication active'
+      authenticated: true,
+      tokens: tokens,
+      user: user,
+      message: 'Authentication active'
     };
   }
 
@@ -221,13 +444,11 @@ export class ZohoAuthService {
       throw new Error('No access token available. Please authenticate first.');
     }
 
-    // Check if token is expired
     if (this.isTokenExpired(tokens)) {
       if (!tokens.refresh_token) {
         throw new Error('Access token expired and no refresh token available. Please re-authenticate.');
       }
 
-      // Refresh the token
       const newTokens = await this.refreshAccessToken();
       return newTokens.access_token;
     }
@@ -240,16 +461,25 @@ export class ZohoAuthService {
    */
   async logout(): Promise<void> {
     try {
+      if (!this.currentUserEmail) {
+        console.log('⚠️ No current user to logout');
+        return;
+      }
+
       const user = await prisma.user.findUnique({
-        where: { email: 'default@zoho-v2.local' }
+        where: { email: this.currentUserEmail }
       });
 
       if (user) {
-        await prisma.zohoAuthToken.deleteMany({
+        await prisma.zohoAuthToken.delete({
           where: { userId: user.id }
+        }).catch(() => {
+          console.log('⚠️ No token to delete or token already deleted');
         });
         console.log('✅ Tokens cleared from database');
       }
+      
+      this.currentUserEmail = null;
     } catch (error: any) {
       console.error('❌ Failed to clear tokens from database:', error.message);
     }
@@ -264,12 +494,196 @@ export class ZohoAuthService {
   }
 
   /**
+   * Get current user with organization details
+   */
+  async getCurrentUserWithOrganization(): Promise<any> {
+    try {
+      if (!this.currentUserEmail) {
+        throw new Error('No current user email available');
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email: this.currentUserEmail },
+        include: { 
+          organization: true,
+          zohoTokens: true 
+        }
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        zohoUserId: user.zohoUserId,
+        role: user.role,
+        organization: user.organization ? {
+          id: user.organization.id,
+          zohoOrgId: user.organization.zohoOrgId,
+          name: user.organization.name,
+          domain: user.organization.domain
+        } : null,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      };
+    } catch (error: any) {
+      console.error('❌ Failed to get current user with organization:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Check if token is expired
    */
   private isTokenExpired(tokens: ZohoTokens): boolean {
     return Date.now() > tokens.expires_at;
   }
+
+  /**
+   * Trigger profile sync for an organization (usually called after admin login)
+   */
+  private async triggerProfileSync(organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 Triggering profile sync for organization...');
+      const { zohoProfileService } = await import('./zohoProfileService');
+      zohoProfileService.triggerProfileSync(organizationId);
+      console.log('🚀 Profile sync triggered in background');
+      
+    } catch (error: any) {
+      console.error('❌ Failed to trigger profile sync:', error.message);
+    }
+  }
+
+  /**
+   * Trigger role sync for an organization (usually called after admin login)
+   */
+  private async triggerRoleSync(organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 Triggering role sync for organization...');
+      const { zohoRoleService } = await import('./zohoRoleService');
+      zohoRoleService.triggerRoleSync(organizationId);
+      console.log('🚀 Role sync triggered in background');
+      
+    } catch (error: any) {
+      console.error('❌ Failed to trigger role sync:', error.message);
+    }
+  }
+
+  /**
+   * Trigger data sharing sync for an organization (usually called admin login)
+   */
+  private async triggerDataSharingSync(organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 [DATA SHARING] Triggering data sharing sync for organization:', organizationId);
+      const { zohoDataSharingService } = await import('./zohoDataSharingService');
+      zohoDataSharingService.triggerDataSharingSync(organizationId);
+      console.log('🚀 [DATA SHARING] Data sharing sync triggered in background');
+    } catch (error: any) {
+      console.error('❌ [DATA SHARING] Failed to trigger data sharing sync:', error.message);
+    }
+  }
+
+  /**
+   * Trigger user sync for an organization (usually called after admin login)
+   */
+  private async triggerUserSync(organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 [USER SYNC] Triggering user sync for organization:', organizationId);
+      const { zohoUserSyncService } = await import('./zohoUserSyncService');
+      zohoUserSyncService.triggerUserSync(organizationId);
+      console.log('🚀 [USER SYNC] User sync triggered in background');
+    } catch (error: any) {
+      console.error('❌ [USER SYNC] Failed to trigger user sync:', error.message);
+    }
+  }
+
+  /**
+   * Trigger contact sync for an organization (usually called after admin login)
+   */
+  private async triggerContactSync(organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 [CONTACT SYNC] Triggering contact sync for organization:', organizationId);
+      const { zohoSyncService } = await import('./zohoSyncService');
+      zohoSyncService.triggerContactSync(organizationId);
+      console.log('🚀 [CONTACT SYNC] Contact sync triggered in background');
+    } catch (error: any) {
+      console.error('❌ [CONTACT SYNC] Failed to trigger contact sync:', error.message);
+    }
+  }
+
+  /**
+   * Update user with profile and role IDs after sync completes (for admin users)
+   */
+  private async updateUserProfileAndRole(zohoUser: any, organizationId: string): Promise<void> {
+    try {
+      console.log('🔄 Waiting for sync to complete before assigning profile/role...');
+      // Wait a bit for the sync operations to complete
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      await this.assignExistingProfileAndRole(zohoUser);
+    } catch (error: any) {
+      console.error('❌ Failed to update user profile/role:', error.message);
+    }
+  }
+
+  /**
+   * Assign existing profile and role to user if they exist in database
+   */
+  private async assignExistingProfileAndRole(zohoUser: any): Promise<void> {
+    try {
+      console.log('🔄 Checking for existing profile and role in database...');
+      
+      // Check if profile exists
+      let profileId = null;
+      if (zohoUser.profile?.id) {
+        const profile = await prisma.zohoProfile.findUnique({
+          where: { zohoProfileId: zohoUser.profile.id }
+        });
+        if (profile) {
+          profileId = profile.zohoProfileId;
+          console.log(`✅ Found profile in database: ${profile.displayLabel}`);
+        } else {
+          console.log(`⚠️ Profile ${zohoUser.profile.id} not found in database`);
+        }
+      }
+
+      // Check if role exists
+      let roleId = null;
+      if (zohoUser.role?.id) {
+        const role = await prisma.zohoRole.findUnique({
+          where: { zohoRoleId: zohoUser.role.id }
+        });
+        if (role) {
+          roleId = role.zohoRoleId;
+          console.log(`✅ Found role in database: ${role.displayLabel}`);
+        } else {
+          console.log(`⚠️ Role ${zohoUser.role.id} not found in database`);
+        }
+      }
+
+      // Update user with profile and role IDs if they exist
+      if (profileId || roleId) {
+        const updateData: any = { updatedAt: new Date() };
+        if (profileId) updateData.zohoProfileId = profileId;
+        if (roleId) updateData.zohoRoleId = roleId;
+
+        await prisma.user.update({
+          where: { email: zohoUser.email },
+          data: updateData
+        });
+        
+        console.log('✅ User profile and role IDs assigned successfully');
+      } else {
+        console.log('⚠️ No profile or role found in database to assign');
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to assign existing profile/role:', error.message);
+      throw error;
+    }
+  }
 }
 
-// Export singleton instance
 export const zohoAuthService = new ZohoAuthService();

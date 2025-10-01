@@ -47,7 +47,7 @@ export default function HomePage() {
           >
             Welcome to{' '}
             <Typography component="span" variant="h2" sx={{ color: '#ffeb3b' }}>
-              Zoho V2
+              SMB Dynamics
             </Typography>
           </Typography>
         </Box>
@@ -80,7 +80,7 @@ export default function HomePage() {
                     }}
                     fullWidth
                   >
-                    🔗 Open Zoho CRM Integration
+                    🔗 Open SMB Dynamics Integration
                   </Button>
                 </Box>
               </CardContent>

@@ -728,7 +728,7 @@ export default function OutlookPage() {
         >
           <Image
             src="/icons/logo.png"
-            alt="Zoho for SMB/Dynamics Logo"
+            alt="SMB Dynamics Logo"
             width={120}
             height={120}
             style={{
@@ -754,7 +754,7 @@ export default function OutlookPage() {
               },
             }}
           >
-            {isAuthenticating ? 'Authenticating...' : 'Login with Zoho'}
+            {isAuthenticating ? 'Authenticating...' : 'Login with SMB Dynamics'}
           </Button>
         </Box>
       )}

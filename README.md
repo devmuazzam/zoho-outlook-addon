@@ -1,41 +1,25 @@
-# Zoho V2 - Full-Stack Next.js Application
+# SMB Dynamics Outlook Integration
 
-A modern full-stack application built with Next.js 14, TypeScript, Material-UI, Tailwind CSS, and a separate Express.js backend server.
+A comprehensive full-stack application that seamlessly integrates Microsoft Outlook with Zoho CRM, enabling users to sync email contacts directly as leads or contacts in Zoho CRM through an Outlook add-in and web dashboard.
 
-## 🏗️ Project Structure
+## 🎯 What This App Does
 
-```
-zoho-v2/
-├── src/                          # Frontend source code
-│   ├── app/                      # Next.js App Router
-│   │   ├── api/                  # Frontend API routes
-│   │   ├── layout.tsx            # Root layout
-│   │   ├── page.tsx              # Home page
-│   │   └── globals.css           # Global styles
-│   └── components/               # React components
-│       ├── providers/            # Context providers
-│       └── ui/                   # Reusable UI components
-├── backend/                      # Backend server
-│   ├── src/
-│   │   ├── config/               # Configuration files
-│   │   ├── middleware/           # Express middleware
-│   │   ├── routes/               # API routes
-│   │   ├── types/                # TypeScript types
-│   │   ├── utils/                # Utility functions
-│   │   └── index.ts              # Server entry point
-│   ├── dist/                     # Compiled backend code
-│   └── package.json              # Backend dependencies
-├── .github/                      # GitHub configuration
-└── package.json                  # Frontend dependencies and scripts
-```
+This application provides a complete integration between Microsoft Outlook and Zoho CRM:
 
-## 🚀 Technology Stack
+- **Outlook Add-in**: Extract contact information from emails and sync them to Zoho CRM as leads or contacts
+- **Web Dashboard**: Manage SMB Dynamics authentication, view user information, and monitor integration status
+- **Real-time Sync**: Bidirectional synchronization of contacts, leads, and user data between systems
+- **Webhook Support**: Receive real-time updates from Zoho CRM for data consistency
+- **Role-based Access**: Support for different user roles and permissions within organizations
+
+## �️ Technology Stack
 
 ### Frontend
 - **Framework**: Next.js 14 with App Router
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS + Material-UI (MUI)
-- **HTTP Client**: Axios with custom API client
+- **UI Library**: Material-UI (MUI) + Tailwind CSS
+- **HTTP Client**: Axios with custom interceptors
+- **Office Integration**: Microsoft Office.js for Outlook add-in
 - **Package Manager**: pnpm
 
 ### Backend
@@ -43,228 +27,213 @@ zoho-v2/
 - **Framework**: Express.js
 - **Language**: TypeScript
 - **HTTP Client**: Axios for external API calls
-- **Database**: PostgreSQL with Prisma ORM
-- **Tools**: Nodemon, ts-node for development
+- **Database**: PostgreSQL
+- **ORM**: Prisma with type-safe database operations
+- **Authentication**: Zoho OAuth 2.0 with JWT token management
 
-## 🛠️ Development Setup
+### Infrastructure
+- **Database**: PostgreSQL for data persistence
+- **Development Tools**: Nodemon, ts-node for hot reloading
+- **Build Tools**: TypeScript compiler, concurrently for multi-process management
+- **Security**: Helmet for security headers, CORS configuration
+
+## � Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
-- pnpm (installed globally)
+- Node.js 18+ installed
+- PostgreSQL database (local or cloud)
+- pnpm package manager (`npm install -g pnpm`)
+- Zoho CRM developer account (for API access)
 
-### Installation
+### 1. Clone and Install Dependencies
+```bash
+# Clone the repository
+git clone <repository-url>
+cd smb-dynamics
 
-1. **Clone and navigate to the project**:
-   ```bash
-   cd zoho-v2
-   ```
+# Install all dependencies (frontend + backend)
+pnpm install
+```
 
-2. **Install dependencies**:
-   ```bash
-   pnpm install
-   ```
-   This will install dependencies for both frontend and backend using the workspace configuration.
+### 2. Environment Setup
+```bash
+# Copy environment templates
+cp .env.example .env.local
+cp backend/.env.example backend/.env
+```
 
-3. **Environment setup**:
-   ```bash
-   # Copy environment examples
-   cp .env.example .env.local
-   cp backend/.env.example backend/.env
-   ```
+Edit the environment files with your configuration:
 
-4. **Database Setup**:
-   ```bash
-   # Install PostgreSQL (see DATABASE_SETUP.md for detailed instructions)
-   
-   # Configure database URL in .env files
-   DATABASE_URL="postgresql://username:password@localhost:5432/zoho_v2_db?schema=public"
-   
-   # Generate Prisma client and setup database
-   pnpm db:generate
-   pnpm db:push  # or pnpm db:migrate for production
-   ```
+**Frontend (.env.local):**
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
 
-5. **Start development servers**:
-   ```bash
-   pnpm dev
-   ```
-   This starts both frontend (localhost:3000) and backend (localhost:3001) servers concurrently.
+**Backend (backend/.env):**
+```bash
+# Database
+DATABASE_URL="postgresql://username:password@localhost:5432/zoho_v2_db?schema=public"
 
-## 📜 Available Scripts
+# Zoho CRM Configuration
+ZOHO_CLIENT_ID=your_zoho_client_id
+ZOHO_CLIENT_SECRET=your_zoho_client_secret
+ZOHO_REDIRECT_URI=http://localhost:3001/auth/zoho/callback
 
-### Root Level Scripts
-- `pnpm dev` - Start both frontend and backend in development mode
-- `pnpm build` - Build the frontend for production
-- `pnpm start` - Start both production servers
+# Application
+NODE_ENV=development
+PORT=3001
+FRONTEND_URL=http://localhost:3000
+```
+
+### 3. Database Setup
+```bash
+# Generate Prisma client
+pnpm db:generate
+
+# Push database schema (creates tables)
+pnpm db:push
+
+# Optional: Seed with sample data
+pnpm db:seed
+```
+
+### 4. Zoho CRM Setup
+1. Go to [Zoho Developer Console](https://api-console.zoho.com/)
+2. Create a new application
+3. Set redirect URI: `http://localhost:3001/auth/zoho/callback`
+4. Copy Client ID and Client Secret to your `.env` file
+
+### 5. Start Development Servers
+```bash
+# Start both frontend (port 3000) and backend (port 3001)
+pnpm dev
+```
+
+### 6. Access the Application
+- **Web Dashboard**: http://localhost:3000
+- **SMB Dynamics Integration**: http://localhost:3000/zoho
+- **Outlook Add-in**: http://localhost:3000/outlook-app
+
+## 📋 Development Workflow
+
+### Available Scripts
+
+**Root Level:**
+- `pnpm dev` - Start both frontend and backend servers
+- `pnpm build` - Build frontend for production
+- `pnpm start` - Start production servers
 - `pnpm lint` - Run ESLint
 - `pnpm format` - Format code with Prettier
-- `pnpm type-check` - Run TypeScript type checking
+- `pnpm type-check` - Run TypeScript checks
 
-### Database Scripts
+**Database:**
 - `pnpm db:generate` - Generate Prisma client
 - `pnpm db:push` - Push schema changes to database
 - `pnpm db:migrate` - Create and run migrations
-- `pnpm db:reset` - Reset database and run migrations
-- `pnpm db:studio` - Open Prisma Studio
+- `pnpm db:reset` - Reset database
+- `pnpm db:studio` - Open Prisma Studio (database GUI)
 
-### Backend Scripts
+**Backend:**
 ```bash
 cd backend
-pnpm dev          # Start backend in development mode
-pnpm build        # Build backend for production
-pnpm start        # Start production backend server
-pnpm build:clean  # Clean and rebuild
-pnpm format       # Format backend code
+pnpm dev      # Start backend development server
+pnpm build    # Build for production
+pnpm start    # Start production server
 ```
 
-## 🔗 Zoho CRM Integration
+## 🔗 Key Features
 
-### Features
-- **OAuth 2.0 Authentication**: Secure authentication with Zoho CRM
-- **Contact Management**: Create, read, update, delete contacts
-- **Lead Management**: Manage leads with full CRUD operations
-- **User Information**: Access current user and organization data
-- **Webhook Support**: Receive real-time updates from Zoho CRM
-- **Token Management**: Automatic token refresh and secure storage
+### Outlook Add-in
+- Extracts contact information from emails
+- One-click sync to Zoho CRM as leads or contacts
+- Authentication handling within Outlook
+- Real-time feedback and error handling
 
-### API Endpoints
+### SMB Dynamics Integration
+- OAuth 2.0 authentication with Zoho CRM
+- Contact and lead management
+- Profile and role synchronization
+- Organization-based data isolation
+- Webhook support for real-time updates
 
-#### Authentication
+### Web Dashboard
+- User authentication status
+- Integration monitoring
+- Contact/lead management interface
+- Webhook data visualization
+
+## 🔧 API Endpoints
+
+### Authentication
 - `GET /auth/zoho/login` - Initiate OAuth flow
-- `GET /auth/zoho/callback` - OAuth callback handler
+- `GET /auth/zoho/callback` - Handle OAuth callback
 - `GET /auth/zoho/status` - Check authentication status
-- `POST /auth/zoho/refresh` - Refresh access token
-- `POST /auth/zoho/logout` - Logout and clear tokens
+- `POST /auth/zoho/logout` - Logout user
 
-#### CRM Data
+### CRM Operations
 - `GET /api/zoho/user` - Get current user info
-- `GET /api/zoho/contacts` - Get contacts with pagination
-- `POST /api/zoho/contacts` - Create new contact
-- `PUT /api/zoho/contacts/:id` - Update contact
-- `DELETE /api/zoho/contacts/:id` - Delete contact
-- `GET /api/zoho/leads` - Get leads with pagination
-- `POST /api/zoho/leads` - Create new lead
-- `GET /api/zoho/search` - Search contacts/leads
-- `GET /api/zoho/organization` - Get organization info
+- `GET /api/zoho/contacts` - List contacts
+- `POST /api/zoho/contacts` - Create contact
+- `GET /api/zoho/leads` - List leads
+- `POST /api/zoho/leads` - Create lead
 
-#### Webhooks
-- `POST /webhooks/zoho/contact` - Receive contact webhooks
-- `POST /webhooks/zoho/lead` - Receive lead webhooks
-- `GET /webhooks/zoho/contacts` - Get stored contact webhook data
-- `GET /webhooks/zoho/status` - Get webhook system status
-- `DELETE /webhooks/zoho/clear` - Clear webhook data
+### Webhooks
+- `POST /webhooks/zoho/contacts` - Contact webhook handler
+- `POST /webhooks/zoho/leads` - Lead webhook handler
+- `GET /webhooks/zoho/status` - Webhook status
 
-### Setup Instructions
+## 🚀 Deployment
 
-1. **Zoho CRM App Setup**:
-   - Go to [Zoho Developer Console](https://api-console.zoho.com/)
-   - Create a new application
-   - Set redirect URI to: `http://localhost:3001/auth/zoho/callback`
-   - Note down Client ID and Client Secret
+### Production Build
+```bash
+# Build frontend
+pnpm build
 
-2. **Environment Configuration**:
-   ```bash
-   # Add to your .env file
-   ZOHO_CLIENT_ID=your_zoho_client_id
-   ZOHO_CLIENT_SECRET=your_zoho_client_secret
-   ZOHO_REDIRECT_URI=http://localhost:3001/auth/zoho/callback
-   ```
+# Build backend
+pnpm build:backend
 
-3. **Access the Integration**:
-   - Start the development server: `pnpm dev`
-   - Visit: http://localhost:3000/zoho
-   - Click "Login with Zoho CRM" to authenticate
+# Start production servers
+pnpm start
+```
 
-### Webhook Configuration
+### Environment Variables for Production
+- Set `NODE_ENV=production`
+- Configure production database URL
+- Set production Zoho redirect URI
+- Configure production frontend URL
 
-To receive real-time updates from Zoho CRM:
+## 🤝 Contributing
 
-1. **In Zoho CRM Settings**:
-   - Go to Setup → Developer Space → Webhooks
-   - Create new webhook with URL: `http://localhost:3001/webhooks/zoho/contact`
-   - Select modules: Contacts, Leads
-   - Choose events: Create, Update, Delete
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
 
-2. **View Webhook Data**:
-   - Use the Webhooks tab in the frontend
-   - Or call `/webhooks/zoho/contacts` API endpoint
+## 📝 License
 
-## 🔧 Configuration Files
+This project is licensed under the MIT License.
 
-- **pnpm-workspace.yaml** - pnpm workspace configuration
-- **.prettierrc** - Prettier formatting rules
-- **tailwind.config.ts** - Tailwind CSS configuration
-- **next.config.mjs** - Next.js configuration
-- **tsconfig.json** - TypeScript configuration for frontend
-- **backend/tsconfig.json** - TypeScript configuration for backend
+## 🆘 Troubleshooting
 
-## 🎨 UI Components
+### Common Issues
 
-The project uses a combination of:
-- **Material-UI (MUI)** for complex components
-- **Tailwind CSS** for utility-first styling
-- Custom components in `src/components/`
+**Database Connection Issues:**
+- Ensure PostgreSQL is running
+- Check DATABASE_URL format
+- Run `pnpm db:push` to sync schema
 
-## 🚦 Development Workflow
+**Zoho API Errors:**
+- Verify Zoho credentials in environment variables
+- Check redirect URI matches Zoho app configuration
+- Ensure required scopes are enabled
 
-1. **Frontend Development**:
-   - Navigate to `src/app/` for pages
-   - Add components in `src/components/`
-   - Use TypeScript for type safety
+**Outlook Add-in Issues:**
+- Verify manifest.xml is properly configured
+- Check Office.js is loading correctly
+- Ensure HTTPS for production deployments
 
-2. **Backend Development**:
-   - API routes in `backend/src/routes/`
-   - Middleware in `backend/src/middleware/`
-   - Types in `backend/src/types/`
-
-3. **Testing Connection**:
-   - Start both servers with `pnpm dev`
-   - Visit localhost:3000
-   - Click "Fetch Data from Backend" to test connectivity
-
-## 📦 Project Features
-
-- ✅ Monorepo setup with pnpm workspaces
-- ✅ TypeScript throughout the stack
-- ✅ Hot reloading for both frontend and backend
-- ✅ Professional error handling
-- ✅ Structured API responses
-- ✅ Material-UI component library
-- ✅ Tailwind CSS for styling
-- ✅ ESLint and Prettier configuration
-- ✅ Environment configuration
-- ✅ Concurrently managed development servers
-- ✅ Axios-based API client with interceptors
-- ✅ Centralized header management
-- ✅ Generic API response types
-- ✅ Request/response logging in development
-- ✅ Automatic auth token handling
-- ✅ Fixed infinite process spawning issue
-- ✅ **Zoho CRM OAuth 2.0 Integration**
-- ✅ **Contact & Lead Management**
-- ✅ **Real-time Webhook Support**
-- ✅ **Professional Authentication Flow**
-- ✅ **Clean JSON API Responses**
-- ✅ **PostgreSQL Database Integration**
-- ✅ **Prisma ORM with Type Safety**
-- ✅ **Database Migrations & Schema Management**
-- ✅ **Comprehensive Data Models**
-- ✅ **Bidirectional Zoho CRM Sync**
-
-## 🔄 Next Steps
-
-1. Add database integration (PostgreSQL/MongoDB)
-2. Implement authentication (JWT)
-3. Add API validation middleware
-4. Set up testing framework
-5. Configure deployment (Docker/Vercel)
-6. Add logging system
-7. Implement caching strategy
-
-## 📝 Notes
-
-- The project uses pnpm for better performance and disk efficiency
-- Backend runs on port 3001, frontend on port 3000
-- All TypeScript types are properly configured
-- CORS is configured for development
-- Error boundaries and proper error handling implemented
+**Port Conflicts:**
+- Frontend runs on port 3000
+- Backend runs on port 3001
+- Ensure these ports are available

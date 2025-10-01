@@ -284,7 +284,7 @@ function AuthSuccessContent() {
 
       <Box sx={{ mt: 3, textAlign: 'center' }}>
         <Chip
-          label="Powered by Zoho V2"
+          label="Powered by SMB Dynamics"
           size="small"
           variant="outlined"
           sx={{ fontSize: '0.7rem' }}

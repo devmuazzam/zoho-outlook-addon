@@ -47,7 +47,7 @@ export default function SupportPage() {
                 <Box>
                   <Typography variant="body1" fontWeight="medium">Email Support</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    support@zoho-crm-integration.com
+                    support@smb-dynamics-integration.com
                   </Typography>
                 </Box>
               </Box>

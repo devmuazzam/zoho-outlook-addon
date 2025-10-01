@@ -136,7 +136,7 @@ export default function ZohoCRMPage() {
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
       <Typography variant="h4" component="h1" sx={{ mb: 3, fontWeight: 'bold' }}>
-        🔗 Zoho CRM Integration
+        🔗 SMB Dynamics Integration
       </Typography>
 
       {/* Error/Success Messages */}
@@ -199,7 +199,7 @@ export default function ZohoCRMPage() {
                 onClick={handleLogin}
                 disabled={loading}
               >
-                {loading ? <CircularProgress size={20} /> : 'Login with Zoho CRM'}
+                {loading ? <CircularProgress size={20} /> : 'Login with SMB Dynamics'}
               </Button>
             ) : (
               <>

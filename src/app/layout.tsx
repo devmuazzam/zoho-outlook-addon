@@ -7,7 +7,7 @@ import Script from 'next/script';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Zoho V2 App",
+  title: "SMB Dynamics App",
   description: "Full-stack Next.js application with separate backend",
 };
 

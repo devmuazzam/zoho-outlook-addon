@@ -29,7 +29,7 @@ class BackendApiClient {
     this.defaultHeaders = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'User-Agent': 'Zoho-V2-Backend/1.0.0',
+      'User-Agent': 'SMB-Dynamics-Backend/1.0.0',
       ...config.headers,
     };
 

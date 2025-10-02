@@ -1,0 +1,308 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id               String                @id @default(cuid())
+  zohoOrgId        String                @unique
+  name             String?
+  domain           String?
+  isActive         Boolean               @default(true)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  contacts         Contact[]
+  users            User[]
+  dataSharingRules ZohoDataSharingRule[]
+  profiles         ZohoProfile[]
+  roles            ZohoRole[]
+
+  @@map("organizations")
+}
+
+model ZohoProfile {
+  id             String                  @id @default(cuid())
+  zohoProfileId  String                  @unique
+  name           String
+  description    String?
+  isActive       Boolean                 @default(true)
+  createdTime    DateTime?
+  modifiedTime   DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  organizationId String
+  custom         Boolean                 @default(false)
+  displayLabel   String
+  users          User[]
+  permissions    ZohoProfilePermission[]
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("zoho_profiles")
+}
+
+model ZohoProfilePermission {
+  id           String      @id @default(cuid())
+  profileId    String
+  zohoPermId   String
+  name         String
+  displayLabel String
+  module       String
+  enabled      Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  profile      ZohoProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, zohoPermId])
+  @@map("zoho_profile_permissions")
+}
+
+model ZohoRole {
+  id              String       @id @default(cuid())
+  zohoRoleId      String       @unique
+  name            String
+  displayLabel    String
+  description     String?
+  shareWithPeers  Boolean      @default(false)
+  forecastManager String?
+  reportingToId   String?
+  reportingToName String?
+  createdById     String?
+  createdByName   String?
+  modifiedById    String?
+  modifiedByName  String?
+  createdTime     DateTime?
+  modifiedTime    DateTime?
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organizationId  String
+  users           User[]
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("zoho_roles")
+}
+
+model ZohoDataSharingRule {
+  id             String       @id @default(cuid())
+  ruleData       Json
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("zoho_data_sharing_rules")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  name           String?
+  zohoUserId     String?        @unique
+  organizationId String?
+  role           Role           @default(USER)
+  zohoProfileId  String?
+  zohoRoleId     String?
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  contacts       Contact[]
+  leads          Lead[]
+  organization   Organization?  @relation(fields: [organizationId], references: [id])
+  zohoProfile    ZohoProfile?   @relation(fields: [zohoProfileId], references: [zohoProfileId])
+  zohoRole       ZohoRole?      @relation(fields: [zohoRoleId], references: [zohoRoleId])
+  zohoTokens     ZohoAuthToken?
+
+  @@map("users")
+}
+
+model ZohoAuthToken {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  accessToken  String
+  refreshToken String?
+  tokenType    String   @default("Bearer")
+  expiresAt    DateTime
+  scopes       String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("zoho_auth_tokens")
+}
+
+model Contact {
+  id             String            @id @default(cuid())
+  zohoId         String?           @unique
+  firstName      String?
+  lastName       String?
+  email          String?
+  phone          String?
+  mobile         String?
+  company        String?
+  title          String?
+  department     String?
+  leadSource     String?
+  description    String?
+  mailingStreet  String?
+  mailingCity    String?
+  mailingState   String?
+  mailingZip     String?
+  mailingCountry String?
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  syncedAt       DateTime          @default(now())
+  userId         String?
+  organizationId String?
+  activities     ContactActivity[]
+  organization   Organization?     @relation(fields: [organizationId], references: [id])
+  user           User?             @relation(fields: [userId], references: [id])
+
+  @@map("contacts")
+}
+
+model Lead {
+  id          String         @id @default(cuid())
+  zohoId      String?        @unique
+  firstName   String?
+  lastName    String?
+  email       String?
+  phone       String?
+  mobile      String?
+  company     String?
+  title       String?
+  industry    String?
+  leadSource  String?
+  leadStatus  LeadStatus     @default(NEW)
+  rating      String?
+  description String?
+  street      String?
+  city        String?
+  state       String?
+  zip         String?
+  country     String?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  syncedAt    DateTime       @default(now())
+  userId      String?
+  activities  LeadActivity[]
+  user        User?          @relation(fields: [userId], references: [id])
+
+  @@map("leads")
+}
+
+model ContactActivity {
+  id          String           @id @default(cuid())
+  contactId   String
+  type        ActivityType
+  subject     String?
+  description String?
+  status      ActivityStatus   @default(PLANNED)
+  priority    ActivityPriority @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  contact     Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@map("contact_activities")
+}
+
+model LeadActivity {
+  id          String           @id @default(cuid())
+  leadId      String
+  type        ActivityType
+  subject     String?
+  description String?
+  status      ActivityStatus   @default(PLANNED)
+  priority    ActivityPriority @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  lead        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_activities")
+}
+
+model WebhookLog {
+  id        String        @id @default(cuid())
+  source    String
+  event     String
+  module    String?
+  operation String?
+  payload   Json
+  status    WebhookStatus @default(RECEIVED)
+  error     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("webhook_logs")
+}
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  category  String   @default("general")
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
+enum Role {
+  ADMIN
+  USER
+  VIEWER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+  NOT_CONTACTED
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  TASK
+  NOTE
+  FOLLOW_UP
+}
+
+enum ActivityStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum ActivityPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+  IGNORED
+}
